@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use core::num::NonZeroU64;
 
 use logos::{Lexer, Logos};
 
@@ -38,6 +38,15 @@ pub enum ParseSrtError {
   #[error("expected header line (e.g. '00:00:01,000 --> 00:00:04,000') after index {0}")]
   ExpectedHeader(NonZeroU64),
 
+  /// Index numbers must be monotonically increasing.
+  #[error("non-monotonic index: expected > {last}, got {got}")]
+  NonMonotonicIndex {
+    /// The previous index number.
+    last: u64,
+    /// The current (bad) index number.
+    got: u64,
+  },
+
   /// An unknown lexer error occurred.
   #[error("unexpected token: {0}")]
   Unknown(&'static str),
@@ -46,6 +55,144 @@ pub enum ParseSrtError {
 impl Default for ParseSrtError {
   fn default() -> Self {
     Self::Unknown("unknown lexer error")
+  }
+}
+
+/// Options that control how the SRT parser handles malformed input.
+///
+/// By default, the parser runs in **strict** mode: monotonic index
+/// enforcement is on, and any malformed input causes an error.
+/// Use [`Options::lossy`] for a maximally permissive preset.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Options {
+  /// Accept entries that have a header line but no preceding index number.
+  allow_missing_index: bool,
+  /// Silently skip text lines that appear outside of any subtitle entry.
+  ignore_orphan_text: bool,
+  /// When an index is followed by an invalid header line, skip the broken
+  /// block instead of returning an error.
+  ignore_broken_header: bool,
+  /// Enforce that index numbers are monotonically increasing.
+  /// In strict (default) mode this causes an error; in lossy mode
+  /// non-monotonic entries are silently skipped.
+  monotonic_index: bool,
+}
+
+impl Options {
+  /// Strict preset — the default. Monotonic index enforcement is on,
+  /// and all malformed input causes an error.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn strict() -> Self {
+    Self {
+      allow_missing_index: false,
+      ignore_orphan_text: false,
+      ignore_broken_header: false,
+      monotonic_index: true,
+    }
+  }
+
+  /// Lossy preset — maximally permissive. Missing indices, orphan text,
+  /// and broken headers are tolerated; monotonic enforcement is off.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn lossy() -> Self {
+    Self {
+      allow_missing_index: true,
+      ignore_orphan_text: true,
+      ignore_broken_header: true,
+      monotonic_index: false,
+    }
+  }
+
+  /// Returns whether missing index numbers are allowed.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn allow_missing_index(&self) -> bool {
+    self.allow_missing_index
+  }
+
+  /// Sets whether missing index numbers are allowed.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_allow_missing_index(mut self, value: bool) -> Self {
+    self.allow_missing_index = value;
+    self
+  }
+
+  /// Sets whether missing index numbers are allowed.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_allow_missing_index(&mut self, value: bool) -> &mut Self {
+    self.allow_missing_index = value;
+    self
+  }
+
+  /// Returns whether orphan text lines are silently skipped.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn ignore_orphan_text(&self) -> bool {
+    self.ignore_orphan_text
+  }
+
+  /// Sets whether orphan text lines are silently skipped.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_ignore_orphan_text(mut self, value: bool) -> Self {
+    self.ignore_orphan_text = value;
+    self
+  }
+
+  /// Sets whether orphan text lines are silently skipped.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_ignore_orphan_text(&mut self, value: bool) -> &mut Self {
+    self.ignore_orphan_text = value;
+    self
+  }
+
+  /// Returns whether broken headers are silently skipped.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn ignore_broken_header(&self) -> bool {
+    self.ignore_broken_header
+  }
+
+  /// Sets whether broken headers are silently skipped.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_ignore_broken_header(mut self, value: bool) -> Self {
+    self.ignore_broken_header = value;
+    self
+  }
+
+  /// Sets whether broken headers are silently skipped.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_ignore_broken_header(&mut self, value: bool) -> &mut Self {
+    self.ignore_broken_header = value;
+    self
+  }
+
+  /// Returns whether monotonic index enforcement is on.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn monotonic_index(&self) -> bool {
+    self.monotonic_index
+  }
+
+  /// Sets whether monotonic index enforcement is on.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_monotonic_index(mut self, value: bool) -> Self {
+    self.monotonic_index = value;
+    self
+  }
+
+  /// Sets whether monotonic index enforcement is on.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_monotonic_index(&mut self, value: bool) -> &mut Self {
+    self.monotonic_index = value;
+    self
+  }
+
+  /// Returns `true` if any tolerance option is enabled (i.e. not fully strict).
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  const fn is_tolerant(&self) -> bool {
+    self.allow_missing_index || self.ignore_orphan_text || self.ignore_broken_header
+  }
+}
+
+impl Default for Options {
+  fn default() -> Self {
+    Self::strict()
   }
 }
 
@@ -127,37 +274,26 @@ enum State {
     body_start: usize,
     body_end: usize,
   },
+  /// Lossy recovery: skip lines until the next blank line, then go to `Index`.
+  SkipToBlank,
   /// The iterator has encountered an error or is exhausted.
   Done,
 }
 
-/// A lazy, zero-copy iterator over SRT subtitle entries.
+/// A lazy, zero-copy SRT parser that yields subtitle entries as an iterator.
 ///
-/// Created by [`parse`]. Each call to [`Iterator::next`] yields the next
-/// parsed [`SrtEntry`], or an error if the input is malformed. Once an
-/// error is returned the iterator is exhausted.
-pub struct SrtIter<'a> {
-  input: &'a str,
-  lines: Lines<'a>,
-  state: State,
-}
-
-/// Parse an SRT string into a lazy iterator of [`SrtEntry`]s with borrowed
-/// text bodies.
-///
-/// The parser uses a line-by-line state machine. Index numbers and timeline
-/// headers are parsed quickly through logos; text lines are collected as
-/// zero-copy `&str` slices from the input.
-///
-/// No allocation is performed up front — entries are produced on demand.
+/// Created via [`Parser::strict`], [`Parser::lossy`], or
+/// [`Parser::with_options`]. Each call to [`Iterator::next`] yields the
+/// next parsed [`SrtEntry`], or an error if the input is malformed. Once
+/// an error is returned the iterator is exhausted.
 ///
 /// # Example
 ///
 /// ```
 /// # #![cfg(any(feature = "std", feature = "alloc"))] {
 /// # use std::vec::Vec;
-/// 
-/// use fasrt::srt::parse;
+///
+/// use fasrt::srt::Parser;
 ///
 /// let srt = "\
 /// 1
@@ -169,28 +305,91 @@ pub struct SrtIter<'a> {
 /// Goodbye world!
 /// ";
 ///
-/// let subs: Vec<_> = parse(srt).collect::<Result<_, _>>().unwrap();
+/// let subs: Vec<_> = Parser::strict(srt).collect::<Result<_, _>>().unwrap();
 /// assert_eq!(subs.len(), 2);
 /// assert_eq!(*subs[0].body(), "Hello world!");
 /// assert_eq!(*subs[1].body(), "Goodbye world!");
 /// # }
 /// ```
-pub fn parse(input: &str) -> SrtIter<'_> {
-  SrtIter {
-    input,
-    lines: Lines::new(input),
-    state: State::Index,
+pub struct Parser<'a> {
+  input: &'a str,
+  lines: Lines<'a>,
+  state: State,
+  opts: Options,
+  /// Tracks the last yielded index for monotonic-index enforcement.
+  last_index: u64,
+}
+
+impl<'a> Parser<'a> {
+  /// Create a parser in **strict** mode.
+  ///
+  /// Any malformed input — including non-monotonic indices — causes the
+  /// iterator to yield an error and stop.
+  pub fn strict(input: &'a str) -> Self {
+    Self::with_options(input, Options::strict())
+  }
+
+  /// Create a parser in **lossy** mode with all tolerances enabled.
+  ///
+  /// Silently skips malformed entries instead of returning errors.
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// # #![cfg(any(feature = "std", feature = "alloc"))] {
+  /// # use std::vec::Vec;
+  ///
+  /// use fasrt::srt::Parser;
+  ///
+  /// let srt = "\
+  /// 1
+  /// 00:00:01,000 --> 00:00:04,000
+  /// Good entry
+  ///
+  /// garbage line
+  ///
+  /// 00:00:05,000 --> 00:00:08,000
+  /// Missing index entry
+  /// ";
+  ///
+  /// let subs: Vec<_> = Parser::lossy(srt).collect::<Result<_, _>>().unwrap();
+  /// assert_eq!(subs.len(), 2);
+  /// assert_eq!(*subs[0].body(), "Good entry");
+  /// assert_eq!(*subs[1].body(), "Missing index entry");
+  /// # }
+  /// ```
+  pub fn lossy(input: &'a str) -> Self {
+    Self::with_options(input, Options::lossy())
+  }
+
+  /// Create a parser with the given [`Options`].
+  pub fn with_options(input: &'a str, opts: Options) -> Self {
+    Self {
+      input,
+      lines: Lines::new(input),
+      state: State::Index,
+      opts,
+      last_index: 0,
+    }
   }
 }
 
-impl<'a> Iterator for SrtIter<'a> {
+impl<'a> Iterator for Parser<'a> {
   type Item = Result<SrtEntry<&'a str>, ParseSrtError>;
 
   fn next(&mut self) -> Option<Self::Item> {
     loop {
       match self.state {
         State::Done => return None,
-
+        State::SkipToBlank => {
+          let Some(line) = self.lines.next() else {
+            self.state = State::Done;
+            return None;
+          };
+          if line.trim_start_matches('\u{feff}').is_empty() {
+            self.state = State::Index;
+          }
+        }
         State::Index => {
           let Some(line) = self.lines.next() else {
             self.state = State::Done;
@@ -202,19 +401,54 @@ impl<'a> Iterator for SrtIter<'a> {
             continue;
           }
 
+          // 1. Try as index number (normal SRT flow).
           match lex_index(trimmed) {
-            Ok(index) => self.state = State::Header { index },
+            Ok(index) => {
+              if self.opts.monotonic_index && index.get() <= self.last_index {
+                if self.opts.is_tolerant() {
+                  self.state = State::SkipToBlank;
+                  continue;
+                }
+                self.state = State::Done;
+                return Some(Err(ParseSrtError::NonMonotonicIndex {
+                  last: self.last_index,
+                  got: index.get(),
+                }));
+              }
+              self.state = State::Header { index };
+            }
             Err(e) => {
+              // 2. Try as header line (missing index).
+              if self.opts.allow_missing_index {
+                if let Some(header) = try_lex_header(trimmed) {
+                  let offset = line.as_ptr() as usize - self.input.as_ptr() as usize + line.len();
+                  self.state = State::Body {
+                    header,
+                    body_start: offset,
+                    body_end: offset,
+                  };
+                  continue;
+                }
+              }
+
+              // 3. Orphan text.
+              if self.opts.ignore_orphan_text {
+                continue;
+              }
+
               self.state = State::Done;
               return Some(Err(e));
             }
           }
         }
-
         State::Header { index } => {
           let Some(line) = self.lines.next() else {
             self.state = State::Done;
-            return Some(Err(ParseSrtError::ExpectedHeader(index)));
+            return if self.opts.ignore_broken_header {
+              None
+            } else {
+              Some(Err(ParseSrtError::ExpectedHeader(index)))
+            };
           };
 
           let trimmed = line.trim_start_matches('\u{feff}');
@@ -229,30 +463,41 @@ impl<'a> Iterator for SrtIter<'a> {
               };
             }
             Err(e) => {
-              self.state = State::Done;
-              return Some(Err(e));
+              if self.opts.ignore_broken_header {
+                if trimmed.is_empty() {
+                  self.state = State::Index;
+                } else {
+                  self.state = State::SkipToBlank;
+                }
+              } else {
+                self.state = State::Done;
+                return Some(Err(e));
+              }
             }
           }
         }
-
         State::Body {
           ref header,
           ref mut body_start,
           ref mut body_end,
         } => {
           let Some(line) = self.lines.next() else {
-            // EOF — yield the final entry
             let body = body_slice(self.input, *body_start, *body_end);
             let entry = SrtEntry::new(header.clone(), body);
+            if let Some(idx) = header.index() {
+              self.last_index = idx.get();
+            }
             self.state = State::Done;
             return Some(Ok(entry));
           };
 
           let trimmed = line.trim_start_matches('\u{feff}');
           if trimmed.is_empty() {
-            // Blank line → yield this entry, transition to Index
             let body = body_slice(self.input, *body_start, *body_end);
             let entry = SrtEntry::new(header.clone(), body);
+            if let Some(idx) = header.index() {
+              self.last_index = idx.get();
+            }
             self.state = State::Index;
             return Some(Ok(entry));
           }
@@ -295,6 +540,15 @@ fn lex_header(line: &str, index: NonZeroU64) -> Result<SrtHeader, ParseSrtError>
   }
 }
 
+/// Try to parse a line as a header. Returns `None` if it isn't one.
+fn try_lex_header(line: &str) -> Option<SrtHeader> {
+  let mut lexer = Token::lexer(line);
+  match lexer.next() {
+    Some(Ok(Token::Header(header))) => Some(header),
+    _ => None,
+  }
+}
+
 /// A line iterator that yields lines without the line terminator,
 /// but preserves the ability to compute offsets into the original input.
 struct Lines<'a> {
@@ -320,13 +574,12 @@ impl<'a> Iterator for Lines<'a> {
     let line_end = remaining
       .find('\n')
       .map(|i| {
-        // Handle \r\n
         let end = if i > 0 && remaining.as_bytes()[i - 1] == b'\r' {
           i - 1
         } else {
           i
         };
-        (end, i + 1) // (line content end, next line start)
+        (end, i + 1)
       })
       .unwrap_or((remaining.len(), remaining.len()));
 

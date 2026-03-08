@@ -10,8 +10,8 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.85"
 
 [[bench]]
-path = "benches/foo.rs"
-name = "foo"
+path = "benches/srt.rs"
+name = "srt"
 harness = false
 
 [features]
@@ -21,7 +21,6 @@ std = ["thiserror/std"]
 
 [dependencies]
 derive_more = { version = "2", default-features = false, features = ["display", "from", "into", "is_variant", "unwrap", "try_unwrap"] }
-itoa = { version = "1", default-features = false }
 logos = { version = "0.16", default-features = false, features = ["export_derive"] }
 paste = "1"
 seq-macro = "0.3"

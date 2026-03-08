@@ -1,8 +1,11 @@
 use derive_more::{Display, From};
 
-use core::time::Duration;
+use core::{num::NonZeroU64, time::Duration};
 
-use crate::{types::*, utils::u64_digits};
+use crate::{
+  types::{buf::Buffer, *},
+  utils::u64_digits,
+};
 
 /// A single subtitle entry in an SRT file.
 pub type SrtEntry<T> = Entry<SrtHeader, T>;
