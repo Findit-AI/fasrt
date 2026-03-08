@@ -550,6 +550,82 @@ fn try_lex_header(line: &str) -> Option<Header> {
   }
 }
 
+/// An SRT file writer that writes subtitle entries to a [`std::io::Write`] target.
+///
+/// # Example
+///
+/// ```
+/// use fasrt::srt::{Writer, Entry, Header, Timestamp};
+/// use fasrt::types::*;
+///
+/// let mut buf = Vec::new();
+/// let mut writer = Writer::new(&mut buf);
+///
+/// let header = Header::new(
+///   Timestamp::from_hmsm(Hour::with(0), Minute::with(0), Second::with(1), Millisecond::with(0)),
+///   Timestamp::from_hmsm(Hour::with(0), Minute::with(0), Second::with(4), Millisecond::with(0)),
+/// ).with_index(std::num::NonZeroU64::new(1).unwrap());
+///
+/// writer.write(&Entry::new(header, "Hello world!")).unwrap();
+///
+/// let output = String::from_utf8(buf).unwrap();
+/// assert_eq!(output, "1\n00:00:01,000 --> 00:00:04,000\nHello world!\n\n");
+/// ```
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub struct Writer<W> {
+  inner: W,
+}
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+const _: () = {
+  use std::io::{self, Write};
+
+  impl<W: Write> Writer<W> {
+    /// Create a new writer wrapping the given [`std::io::Write`] target.
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub const fn new(inner: W) -> Self {
+      Self { inner }
+    }
+
+    /// Write a single subtitle entry.
+    pub fn write<T: AsRef<str>>(&mut self, entry: &Entry<T>) -> io::Result<()> {
+      let header = entry.header();
+      self.inner.write_all(header.encode().as_str().as_bytes())?;
+      let body = entry.body().as_ref();
+      if !body.is_empty() {
+        self.inner.write_all(body.as_bytes())?;
+      }
+      self.inner.write_all(b"\n\n")
+    }
+
+    /// Write all entries from an iterator.
+    pub fn write_all<'a, T, I>(&mut self, entries: I) -> io::Result<()>
+    where
+      T: AsRef<str> + 'a,
+      I: IntoIterator<Item = &'a Entry<T>>,
+    {
+      for entry in entries {
+        self.write(entry)?;
+      }
+      Ok(())
+    }
+
+    /// Flush the underlying writer.
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn flush(&mut self) -> io::Result<()> {
+      self.inner.flush()
+    }
+
+    /// Consume the writer and return the inner [`std::io::Write`] target.
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn into_inner(self) -> W {
+      self.inner
+    }
+  }
+};
+
 /// A line iterator that yields lines without the line terminator,
 /// but preserves the ability to compute offsets into the original input.
 struct Lines<'a> {
