@@ -10,7 +10,8 @@ extern crate alloc as std;
 #[cfg(feature = "std")]
 extern crate std;
 
-mod srt;
+/// SRT subtitle parser.
+pub mod srt;
 
 /// The types module contains the public types used by this crate.
 pub mod types;

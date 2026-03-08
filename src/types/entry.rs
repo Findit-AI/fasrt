@@ -7,6 +7,12 @@ pub struct Entry<H, T> {
 }
 
 impl<H, T> Entry<H, T> {
+  /// Create a new `Entry` with the given header and body.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn new(header: H, body: T) -> Self {
+    Self { header, body }
+  }
+
   /// Returns the header of this subtitle entry, containing the index and timestamps.
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn header(&self) -> &H {
