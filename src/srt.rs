@@ -402,9 +402,9 @@ impl<'a> Iterator for Parser<'a> {
             continue;
           }
 
-          // 1. Try as index number (normal SRT flow).
-          match lex_index(trimmed) {
-            Ok(index) => {
+          match lex(trimmed) {
+            // 1. Index number (normal SRT flow).
+            Ok(Some(Token::Number(index))) => {
               if self.opts.monotonic_index && index.get() <= self.last_index {
                 if self.opts.is_tolerant() {
                   self.state = State::SkipToBlank;
@@ -418,25 +418,26 @@ impl<'a> Iterator for Parser<'a> {
               }
               self.state = State::Header { index };
             }
+            // 2. Header line without index (missing index).
+            Ok(Some(Token::Header(header))) if self.opts.allow_missing_index => {
+              let offset = line.as_ptr() as usize - self.input.as_ptr() as usize + line.len();
+              self.state = State::Body {
+                header,
+                body_start: offset,
+                body_end: offset,
+              };
+            }
+            // 3. Orphan text / no token / unrecognised line.
+            Ok(_) | Err(_) if self.opts.ignore_orphan_text => {
+              continue;
+            }
+            Ok(Some(_)) | Ok(None) => {
+              self.state = State::Done;
+              return Some(Err(ParseSrtError::Unknown(
+                "expected subtitle index number",
+              )));
+            }
             Err(e) => {
-              // 2. Try as header line (missing index).
-              if self.opts.allow_missing_index {
-                if let Some(header) = try_lex_header(trimmed) {
-                  let offset = line.as_ptr() as usize - self.input.as_ptr() as usize + line.len();
-                  self.state = State::Body {
-                    header,
-                    body_start: offset,
-                    body_end: offset,
-                  };
-                  continue;
-                }
-              }
-
-              // 3. Orphan text.
-              if self.opts.ignore_orphan_text {
-                continue;
-              }
-
               self.state = State::Done;
               return Some(Err(e));
             }
@@ -453,8 +454,8 @@ impl<'a> Iterator for Parser<'a> {
           };
 
           let trimmed = line.trim_start_matches('\u{feff}');
-          match lex_header(trimmed, index) {
-            Ok(mut header) => {
+          match lex(trimmed) {
+            Ok(Some(Token::Header(mut header))) => {
               header.set_index(index);
               let offset = line.as_ptr() as usize - self.input.as_ptr() as usize + line.len();
               self.state = State::Body {
@@ -463,17 +464,20 @@ impl<'a> Iterator for Parser<'a> {
                 body_end: offset,
               };
             }
-            Err(e) => {
-              if self.opts.ignore_broken_header {
-                if trimmed.is_empty() {
-                  self.state = State::Index;
-                } else {
-                  self.state = State::SkipToBlank;
-                }
+            _ if self.opts.ignore_broken_header => {
+              if trimmed.is_empty() {
+                self.state = State::Index;
               } else {
-                self.state = State::Done;
-                return Some(Err(e));
+                self.state = State::SkipToBlank;
               }
+            }
+            Ok(_) => {
+              self.state = State::Done;
+              return Some(Err(ParseSrtError::ExpectedHeader(index)));
+            }
+            Err(e) => {
+              self.state = State::Done;
+              return Some(Err(e));
             }
           }
         }
@@ -521,32 +525,12 @@ fn body_slice(input: &str, start: usize, end: usize) -> &str {
   if start >= end { "" } else { &input[start..end] }
 }
 
-/// Use the logos lexer to parse a line as a subtitle index number.
-fn lex_index(line: &str) -> Result<NonZeroU64, ParseSrtError> {
-  let mut lexer = Token::lexer(line);
-  match lexer.next() {
-    Some(Ok(Token::Number(n))) => Ok(n),
-    Some(Err(e)) => Err(e),
-    _ => Err(ParseSrtError::Unknown("expected subtitle index number")),
-  }
-}
-
-/// Use the logos lexer to parse a line as a header (timeline).
-fn lex_header(line: &str, index: NonZeroU64) -> Result<Header, ParseSrtError> {
-  let mut lexer = Token::lexer(line);
-  match lexer.next() {
-    Some(Ok(Token::Header(header))) => Ok(header),
-    Some(Err(e)) => Err(e),
-    _ => Err(ParseSrtError::ExpectedHeader(index)),
-  }
-}
-
-/// Try to parse a line as a header. Returns `None` if it isn't one.
-fn try_lex_header(line: &str) -> Option<Header> {
-  let mut lexer = Token::lexer(line);
-  match lexer.next() {
-    Some(Ok(Token::Header(header))) => Some(header),
-    _ => None,
+/// Lex the next token from a line. Returns `Ok(None)` when the line
+/// produces no tokens.
+fn lex(line: &str) -> Result<Option<Token>, ParseSrtError> {
+  match Token::lexer(line).next() {
+    Some(result) => result.map(Some),
+    None => Ok(None),
   }
 }
 
