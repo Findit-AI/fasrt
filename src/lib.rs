@@ -1,4 +1,4 @@
-//! A template for creating Rust open-source repo on GitHub
+//! A blazing fast SRT subtitle parser and writer in Rust.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
@@ -9,3 +9,15 @@ extern crate alloc as std;
 
 #[cfg(feature = "std")]
 extern crate std;
+
+/// SRT subtitle parser.
+pub mod srt;
+
+/// The types module contains the public types used by this crate.
+pub mod types;
+
+/// The error types.
+pub mod error;
+
+/// Utility functions
+pub mod utils;
