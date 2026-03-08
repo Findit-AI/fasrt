@@ -34,7 +34,7 @@ impl<const N: usize> AsRef<str> for Buffer<N> {
 
 impl<const N: usize> Buffer<N> {
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub(super) const fn new() -> Self {
+  pub(crate) const fn new() -> Self {
     Self([0; N])
   }
 
@@ -48,7 +48,7 @@ impl<const N: usize> Buffer<N> {
   }
 
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub(super) const fn incr_len(&mut self, incr: usize) {
+  const fn incr_len(&mut self, incr: usize) {
     match self.0.last_mut() {
       Some(val) => *val = *val + incr as u8,
       None => panic!("buffer must be initialized with at least one byte to store the length"),
@@ -56,7 +56,7 @@ impl<const N: usize> Buffer<N> {
   }
 
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub(super) const fn write_str(&mut self, bytes: &str) {
+  pub(crate) const fn write_str(&mut self, bytes: &str) {
     self.write_bytes(bytes.as_bytes());
   }
 
@@ -76,7 +76,7 @@ impl<const N: usize> Buffer<N> {
   }
 
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub(super) const fn fmt_u64(&mut self, mut n: u64) {
+  pub(crate) const fn fmt_u64(&mut self, mut n: u64) {
     let mut buf = [0; 20];
 
     // Handle zero explicitly

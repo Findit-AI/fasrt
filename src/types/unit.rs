@@ -12,7 +12,7 @@ use super::macros::*;
 )]
 #[display("{}", self.as_str())]
 #[repr(transparent)]
-pub struct Minute(pub(super) u8);
+pub struct Minute(pub(crate) u8);
 
 impl FromStr for Minute {
   type Err = ParseMinuteError;
@@ -58,7 +58,7 @@ impl Minute {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, Into)]
 #[display("{}", self.as_str())]
 #[repr(transparent)]
-pub struct Second(pub(super) u8);
+pub struct Second(pub(crate) u8);
 
 impl FromStr for Second {
   type Err = ParseSecondError;
@@ -104,7 +104,7 @@ impl Second {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, Into)]
 #[display("{:0>3}", _0)]
 #[repr(transparent)]
-pub struct Hour(pub(super) u16);
+pub struct Hour(pub(crate) u16);
 
 impl FromStr for Hour {
   type Err = ParseHourError;
@@ -151,7 +151,7 @@ impl Hour {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, Into)]
 #[display("{:0>3}", _0)]
 #[repr(transparent)]
-pub struct Millisecond(pub(super) u16);
+pub struct Millisecond(pub(crate) u16);
 
 impl FromStr for Millisecond {
   type Err = ParseMillisecondError;

@@ -3,20 +3,20 @@ use derive_more::{Display, From};
 use core::{num::NonZeroU64, time::Duration};
 
 use crate::{
-  types::{buf::Buffer, *},
+  types::{Entry as GenericEntry, *},
   utils::u64_digits,
 };
 
 /// A single subtitle entry in an SRT file.
-pub type SrtEntry<T> = Entry<SrtHeader, T>;
+pub type Entry<T> = GenericEntry<Header, T>;
 
 /// A timestamp in an SRT file, with millisecond precision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, From)]
 #[display("{}:{}:{},{}", hours, minutes, seconds, millis)]
-pub struct SrtTimestamp {
+pub struct Timestamp {
   /// Hours (0–999).
   hours: Hour,
-  /// Millisecondeconds (0–999).
+  /// Milliseconds (0–999).
   millis: Millisecond,
   /// Minutes (0–59).
   minutes: Minute,
@@ -24,14 +24,14 @@ pub struct SrtTimestamp {
   seconds: Second,
 }
 
-impl Default for SrtTimestamp {
+impl Default for Timestamp {
   #[cfg_attr(not(tarpaulin), inline(always))]
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl SrtTimestamp {
+impl Timestamp {
   /// Create a new timestamp.
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new() -> Self {
@@ -159,16 +159,16 @@ impl SrtTimestamp {
 
 /// The header of a subtitle entry, containing the index and timestamps, but not the text.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SrtHeader {
+pub struct Header {
   index: Option<NonZeroU64>,
-  start: SrtTimestamp,
-  end: SrtTimestamp,
+  start: Timestamp,
+  end: Timestamp,
 }
 
-impl SrtHeader {
-  /// Create a new `SrtHeader` with the given index, start time, and end time.
+impl Header {
+  /// Create a new `Header` with the given index, start time, and end time.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn new(start: SrtTimestamp, end: SrtTimestamp) -> Self {
+  pub const fn new(start: Timestamp, end: Timestamp) -> Self {
     Self {
       index: None,
       start,
@@ -212,40 +212,40 @@ impl SrtHeader {
 
   /// Returns the start time of this subtitle header.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn start(&self) -> SrtTimestamp {
+  pub const fn start(&self) -> Timestamp {
     self.start
   }
 
   /// Sets the start time of this subtitle header.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn with_start(mut self, start: SrtTimestamp) -> Self {
+  pub const fn with_start(mut self, start: Timestamp) -> Self {
     self.start = start;
     self
   }
 
   /// Sets the start time of this subtitle header.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn set_start(&mut self, start: SrtTimestamp) -> &mut Self {
+  pub const fn set_start(&mut self, start: Timestamp) -> &mut Self {
     self.start = start;
     self
   }
 
   /// Returns the end time of this subtitle header.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn end(&self) -> SrtTimestamp {
+  pub const fn end(&self) -> Timestamp {
     self.end
   }
 
   /// Sets the end time of this subtitle header.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn with_end(mut self, end: SrtTimestamp) -> Self {
+  pub const fn with_end(mut self, end: Timestamp) -> Self {
     self.end = end;
     self
   }
 
   /// Sets the end time of this subtitle header.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn set_end(&mut self, end: SrtTimestamp) -> &mut Self {
+  pub const fn set_end(&mut self, end: Timestamp) -> &mut Self {
     self.end = end;
     self
   }

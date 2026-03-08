@@ -2,10 +2,11 @@ use core::num::NonZeroU64;
 
 use logos::{Lexer, Logos};
 
-use crate::{
-  error::*,
-  types::{SrtEntry, SrtHeader, SrtTimestamp},
-};
+use crate::error::*;
+
+pub use types::{Entry, Header, Timestamp};
+
+mod types;
 
 /// The error type for parsing SRT files.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -208,7 +209,7 @@ enum Token {
     r"[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3} --> [0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}",
     parse_header
   )]
-  Header(SrtHeader),
+  Header(Header),
 
   /// A number (subtitle index).
   #[regex(r"[0-9]+", parse_number, priority = 3)]
@@ -231,20 +232,20 @@ fn parse_number(s: &mut Lexer<'_, Token>) -> Result<NonZeroU64, ParseSrtError> {
     .and_then(|num| NonZeroU64::new(num).ok_or(ParseIndexNumberError::Zero.into()))
 }
 
-fn parse_header(s: &mut Lexer<'_, Token>) -> Result<SrtHeader, ParseSrtError> {
+fn parse_header(s: &mut Lexer<'_, Token>) -> Result<Header, ParseSrtError> {
   let s = s.slice().trim();
   let mut parts = s.split(" --> ");
   match (parts.next(), parts.next()) {
     (Some(start), Some(end)) => {
       let start = parse_timestamp(start)?;
       let end = parse_timestamp(end)?;
-      Ok(SrtHeader::new(start, end))
+      Ok(Header::new(start, end))
     }
     _ => panic!("logos regex should guarantee this never happens"),
   }
 }
 
-fn parse_timestamp(s: &str) -> Result<SrtTimestamp, ParseSrtError> {
+fn parse_timestamp(s: &str) -> Result<Timestamp, ParseSrtError> {
   let mut parts = s.split(",");
 
   match (parts.next(), parts.next()) {
@@ -256,7 +257,7 @@ fn parse_timestamp(s: &str) -> Result<SrtTimestamp, ParseSrtError> {
         _ => panic!("logos regex should guarantee this never happens"),
       };
       let millis = millis.parse()?;
-      Ok(SrtTimestamp::from_hmsm(h, m, s, millis))
+      Ok(Timestamp::from_hmsm(h, m, s, millis))
     }
     _ => panic!("logos regex should guarantee this never happens"),
   }
@@ -270,7 +271,7 @@ enum State {
   Header { index: NonZeroU64 },
   /// Got the header, collecting body text lines.
   Body {
-    header: SrtHeader,
+    header: Header,
     body_start: usize,
     body_end: usize,
   },
@@ -284,7 +285,7 @@ enum State {
 ///
 /// Created via [`Parser::strict`], [`Parser::lossy`], or
 /// [`Parser::with_options`]. Each call to [`Iterator::next`] yields the
-/// next parsed [`SrtEntry`], or an error if the input is malformed. Once
+/// next parsed [`Entry`], or an error if the input is malformed. Once
 /// an error is returned the iterator is exhausted.
 ///
 /// # Example
@@ -375,7 +376,7 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Iterator for Parser<'a> {
-  type Item = Result<SrtEntry<&'a str>, ParseSrtError>;
+  type Item = Result<Entry<&'a str>, ParseSrtError>;
 
   fn next(&mut self) -> Option<Self::Item> {
     loop {
@@ -483,7 +484,7 @@ impl<'a> Iterator for Parser<'a> {
         } => {
           let Some(line) = self.lines.next() else {
             let body = body_slice(self.input, *body_start, *body_end);
-            let entry = SrtEntry::new(header.clone(), body);
+            let entry = Entry::new(header.clone(), body);
             if let Some(idx) = header.index() {
               self.last_index = idx.get();
             }
@@ -494,7 +495,7 @@ impl<'a> Iterator for Parser<'a> {
           let trimmed = line.trim_start_matches('\u{feff}');
           if trimmed.is_empty() {
             let body = body_slice(self.input, *body_start, *body_end);
-            let entry = SrtEntry::new(header.clone(), body);
+            let entry = Entry::new(header.clone(), body);
             if let Some(idx) = header.index() {
               self.last_index = idx.get();
             }
@@ -531,7 +532,7 @@ fn lex_index(line: &str) -> Result<NonZeroU64, ParseSrtError> {
 }
 
 /// Use the logos lexer to parse a line as a header (timeline).
-fn lex_header(line: &str, index: NonZeroU64) -> Result<SrtHeader, ParseSrtError> {
+fn lex_header(line: &str, index: NonZeroU64) -> Result<Header, ParseSrtError> {
   let mut lexer = Token::lexer(line);
   match lexer.next() {
     Some(Ok(Token::Header(header))) => Ok(header),
@@ -541,7 +542,7 @@ fn lex_header(line: &str, index: NonZeroU64) -> Result<SrtHeader, ParseSrtError>
 }
 
 /// Try to parse a line as a header. Returns `None` if it isn't one.
-fn try_lex_header(line: &str) -> Option<SrtHeader> {
+fn try_lex_header(line: &str) -> Option<Header> {
   let mut lexer = Token::lexer(line);
   match lexer.next() {
     Some(Ok(Token::Header(header))) => Some(header),

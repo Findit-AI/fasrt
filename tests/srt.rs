@@ -4,22 +4,22 @@ use core::num::NonZeroU64;
 use std::vec::Vec;
 
 use fasrt::{
-  srt::{Options, ParseSrtError, Parser},
+  srt::{Entry, Options, ParseSrtError, Parser, Timestamp},
   types::*,
 };
 
 /// Helper: collect the strict parser into a Vec.
-fn collect(input: &str) -> Result<Vec<SrtEntry<&str>>, ParseSrtError> {
+fn collect(input: &str) -> Result<Vec<Entry<&str>>, ParseSrtError> {
   Parser::strict(input).collect()
 }
 
 /// Helper: collect the lossy parser into a Vec.
-fn collect_lossy(input: &str) -> Result<Vec<SrtEntry<&str>>, ParseSrtError> {
+fn collect_lossy(input: &str) -> Result<Vec<Entry<&str>>, ParseSrtError> {
   Parser::lossy(input).collect()
 }
 
 /// Helper: collect with specific options.
-fn collect_with(input: &str, opts: Options) -> Result<Vec<SrtEntry<&str>>, ParseSrtError> {
+fn collect_with(input: &str, opts: Options) -> Result<Vec<Entry<&str>>, ParseSrtError> {
   Parser::with_options(input, opts).collect()
 }
 
@@ -704,7 +704,7 @@ Third
 
 #[test]
 fn header_encode_roundtrip() {
-  let ts = SrtTimestamp::from_hmsm(
+  let ts = Timestamp::from_hmsm(
     Hour::with(1),
     Minute::with(23),
     Second::with(45),
@@ -715,7 +715,7 @@ fn header_encode_roundtrip() {
 
 #[test]
 fn timestamp_to_duration() {
-  let ts = SrtTimestamp::from_hmsm(
+  let ts = Timestamp::from_hmsm(
     Hour::with(1),
     Minute::with(0),
     Second::with(0),
