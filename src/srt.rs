@@ -1,5 +1,4 @@
 use std::num::NonZeroU64;
-use std::vec::Vec;
 
 use logos::{Lexer, Logos};
 
@@ -72,12 +71,10 @@ enum Token {
 fn parse_number(s: &mut Lexer<'_, Token>) -> Result<NonZeroU64, ParseSrtError> {
   let slice = s.slice().trim();
   if slice.len() > 20 {
-    // Longer than max u64 value, so definitely an overflow.
     return Err(ParseIndexNumberError::Overflow.into());
   }
 
   if slice == "0" {
-    // Zero is not a valid index number.
     return Err(ParseIndexNumberError::Zero.into());
   }
 
@@ -130,21 +127,36 @@ enum State {
     body_start: usize,
     body_end: usize,
   },
+  /// The iterator has encountered an error or is exhausted.
+  Done,
 }
 
-/// Parse an SRT string into a list of [`SrtEntry`]s with borrowed text bodies.
+/// A lazy, zero-copy iterator over SRT subtitle entries.
+///
+/// Created by [`parse`]. Each call to [`Iterator::next`] yields the next
+/// parsed [`SrtEntry`], or an error if the input is malformed. Once an
+/// error is returned the iterator is exhausted.
+pub struct SrtIter<'a> {
+  input: &'a str,
+  lines: Lines<'a>,
+  state: State,
+}
+
+/// Parse an SRT string into a lazy iterator of [`SrtEntry`]s with borrowed
+/// text bodies.
 ///
 /// The parser uses a line-by-line state machine. Index numbers and timeline
 /// headers are parsed quickly through logos; text lines are collected as
 /// zero-copy `&str` slices from the input.
 ///
-/// # Errors
-///
-/// Returns a [`ParseSrtError`] if the input is malformed.
+/// No allocation is performed up front — entries are produced on demand.
 ///
 /// # Example
 ///
 /// ```
+/// # #![cfg(any(feature = "std", feature = "alloc"))] {
+/// # use std::vec::Vec;
+/// 
 /// use fasrt::srt::parse;
 ///
 /// let srt = "\
@@ -157,53 +169,97 @@ enum State {
 /// Goodbye world!
 /// ";
 ///
-/// let subs = parse(srt).unwrap();
+/// let subs: Vec<_> = parse(srt).collect::<Result<_, _>>().unwrap();
 /// assert_eq!(subs.len(), 2);
 /// assert_eq!(*subs[0].body(), "Hello world!");
 /// assert_eq!(*subs[1].body(), "Goodbye world!");
+/// # }
 /// ```
-pub fn parse(input: &str) -> Result<Vec<SrtEntry<&str>>, ParseSrtError> {
-  let mut entries = Vec::new();
-  let mut state = State::Index;
+pub fn parse(input: &str) -> SrtIter<'_> {
+  SrtIter {
+    input,
+    lines: Lines::new(input),
+    state: State::Index,
+  }
+}
 
-  for line in Lines::new(input) {
-    let trimmed = line.trim_start_matches('\u{feff}');
+impl<'a> Iterator for SrtIter<'a> {
+  type Item = Result<SrtEntry<&'a str>, ParseSrtError>;
 
-    match state {
-      State::Index => {
-        // Skip blank lines between entries
-        if trimmed.is_empty() {
-          continue;
+  fn next(&mut self) -> Option<Self::Item> {
+    loop {
+      match self.state {
+        State::Done => return None,
+
+        State::Index => {
+          let Some(line) = self.lines.next() else {
+            self.state = State::Done;
+            return None;
+          };
+
+          let trimmed = line.trim_start_matches('\u{feff}');
+          if trimmed.is_empty() {
+            continue;
+          }
+
+          match lex_index(trimmed) {
+            Ok(index) => self.state = State::Header { index },
+            Err(e) => {
+              self.state = State::Done;
+              return Some(Err(e));
+            }
+          }
         }
 
-        // Parse the index number using logos
-        let index = lex_index(trimmed)?;
-        state = State::Header { index };
-      }
-      State::Header { index } => {
-        // Parse the header/timeline using logos
-        let mut header = lex_header(trimmed, index)?;
-        header.set_index(index);
-        state = State::Body {
-          header,
-          body_start: line.as_ptr() as usize - input.as_ptr() as usize + line.len(),
-          body_end: line.as_ptr() as usize - input.as_ptr() as usize + line.len(),
-        };
-      }
-      State::Body {
-        ref header,
-        ref mut body_start,
-        ref mut body_end,
-      } => {
-        if trimmed.is_empty() {
-          // Blank line → finalize this entry
-          let body = body_slice(input, *body_start, *body_end);
-          entries.push(make_entry(header, body));
-          state = State::Index;
-        } else {
-          let line_offset = line.as_ptr() as usize - input.as_ptr() as usize;
+        State::Header { index } => {
+          let Some(line) = self.lines.next() else {
+            self.state = State::Done;
+            return Some(Err(ParseSrtError::ExpectedHeader(index)));
+          };
+
+          let trimmed = line.trim_start_matches('\u{feff}');
+          match lex_header(trimmed, index) {
+            Ok(mut header) => {
+              header.set_index(index);
+              let offset = line.as_ptr() as usize - self.input.as_ptr() as usize + line.len();
+              self.state = State::Body {
+                header,
+                body_start: offset,
+                body_end: offset,
+              };
+            }
+            Err(e) => {
+              self.state = State::Done;
+              return Some(Err(e));
+            }
+          }
+        }
+
+        State::Body {
+          ref header,
+          ref mut body_start,
+          ref mut body_end,
+        } => {
+          let Some(line) = self.lines.next() else {
+            // EOF — yield the final entry
+            let body = body_slice(self.input, *body_start, *body_end);
+            let entry = SrtEntry::new(header.clone(), body);
+            self.state = State::Done;
+            return Some(Ok(entry));
+          };
+
+          let trimmed = line.trim_start_matches('\u{feff}');
+          if trimmed.is_empty() {
+            // Blank line → yield this entry, transition to Index
+            let body = body_slice(self.input, *body_start, *body_end);
+            let entry = SrtEntry::new(header.clone(), body);
+            self.state = State::Index;
+            return Some(Ok(entry));
+          }
+
+          // Accumulate text line
+          let line_offset = line.as_ptr() as usize - self.input.as_ptr() as usize;
           if *body_start == *body_end {
-            // First text line
             *body_start = line_offset;
           }
           *body_end = line_offset + line.len();
@@ -211,30 +267,12 @@ pub fn parse(input: &str) -> Result<Vec<SrtEntry<&str>>, ParseSrtError> {
       }
     }
   }
-
-  // Handle the last entry if the file doesn't end with a blank line
-  if let State::Body {
-    header,
-    body_start,
-    body_end,
-  } = state
-  {
-    let body = body_slice(input, body_start, body_end);
-    entries.push(make_entry(&header, body));
-  }
-
-  Ok(entries)
 }
 
 /// Extract the body slice from the input, or empty string if no text lines.
 #[cfg_attr(not(tarpaulin), inline(always))]
 fn body_slice(input: &str, start: usize, end: usize) -> &str {
   if start >= end { "" } else { &input[start..end] }
-}
-
-#[cfg_attr(not(tarpaulin), inline(always))]
-fn make_entry<'a>(header: &SrtHeader, body: &'a str) -> SrtEntry<&'a str> {
-  SrtEntry::new(header.clone(), body)
 }
 
 /// Use the logos lexer to parse a line as a subtitle index number.
