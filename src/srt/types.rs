@@ -427,8 +427,8 @@ impl Header {
   ///   types::{Hour, Minute, Second, Millisecond},
   /// };
   ///
-  /// let mut header = Header::new(Timestamp::default(), Timestamp::default());
-  /// header.set_start(Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4)));
+  /// let header = Header::new(Timestamp::default(), Timestamp::default())
+  ///   .with_start(Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4)));
   /// assert_eq!(header.start(), Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4)));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
@@ -476,8 +476,8 @@ impl Header {
   ///   types::{Hour, Minute, Second, Millisecond},
   /// };
   ///
-  /// let mut header = Header::new(Timestamp::default(), Timestamp::default());
-  /// header.set_end(Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4)));
+  /// let header = Header::new(Timestamp::default(), Timestamp::default())
+  ///   .with_end(Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4)));
   /// assert_eq!(header.end(), Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4)));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
