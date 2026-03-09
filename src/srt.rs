@@ -105,19 +105,41 @@ impl Options {
   }
 
   /// Returns whether missing index numbers are allowed.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict();
+  /// assert!(!opts.allow_missing_index());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn allow_missing_index(&self) -> bool {
     self.allow_missing_index
   }
 
   /// Sets whether missing index numbers are allowed.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict().with_allow_missing_index(true);
+  /// assert!(opts.allow_missing_index());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn with_allow_missing_index(mut self, value: bool) -> Self {
-    self.allow_missing_index = value;
+    self.set_allow_missing_index(value);
     self
   }
 
   /// Sets whether missing index numbers are allowed.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let mut opts = Options::strict();
+  /// opts.set_allow_missing_index(true);
+  /// assert!(opts.allow_missing_index());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_allow_missing_index(&mut self, value: bool) -> &mut Self {
     self.allow_missing_index = value;
@@ -125,19 +147,40 @@ impl Options {
   }
 
   /// Returns whether orphan text lines are silently skipped.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict();
+  /// assert!(!opts.ignore_orphan_text());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn ignore_orphan_text(&self) -> bool {
     self.ignore_orphan_text
   }
 
   /// Sets whether orphan text lines are silently skipped.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict().with_ignore_orphan_text(true);
+  /// assert!(opts.ignore_orphan_text());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn with_ignore_orphan_text(mut self, value: bool) -> Self {
-    self.ignore_orphan_text = value;
+    self.set_ignore_orphan_text(value);
     self
   }
 
   /// Sets whether orphan text lines are silently skipped.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let mut opts = Options::strict();
+  /// opts.set_ignore_orphan_text(true);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_ignore_orphan_text(&mut self, value: bool) -> &mut Self {
     self.ignore_orphan_text = value;
@@ -145,19 +188,41 @@ impl Options {
   }
 
   /// Returns whether broken headers are silently skipped.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict();
+  /// assert!(!opts.ignore_broken_header());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn ignore_broken_header(&self) -> bool {
     self.ignore_broken_header
   }
 
   /// Sets whether broken headers are silently skipped.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict().with_ignore_broken_header(true);
+  /// assert!(opts.ignore_broken_header());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn with_ignore_broken_header(mut self, value: bool) -> Self {
-    self.ignore_broken_header = value;
+    self.set_ignore_broken_header(value);
     self
   }
 
   /// Sets whether broken headers are silently skipped.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let mut opts = Options::strict();
+  /// opts.set_ignore_broken_header(true);
+  /// assert!(opts.ignore_broken_header());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_ignore_broken_header(&mut self, value: bool) -> &mut Self {
     self.ignore_broken_header = value;
@@ -165,19 +230,41 @@ impl Options {
   }
 
   /// Returns whether monotonic index enforcement is on.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict();
+  /// assert!(opts.monotonic_index());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn monotonic_index(&self) -> bool {
     self.monotonic_index
   }
 
   /// Sets whether monotonic index enforcement is on.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let opts = Options::strict().with_monotonic_index(false);
+  /// assert!(!opts.monotonic_index());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn with_monotonic_index(mut self, value: bool) -> Self {
-    self.monotonic_index = value;
+    self.set_monotonic_index(value);
     self
   }
 
   /// Sets whether monotonic index enforcement is on.
+  ///
+  /// ```rust
+  /// use fasrt::srt::Options;
+  ///
+  /// let mut opts = Options::strict();
+  /// opts.set_monotonic_index(false);
+  /// assert!(!opts.monotonic_index());
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_monotonic_index(&mut self, value: bool) -> &mut Self {
     self.monotonic_index = value;
@@ -263,18 +350,27 @@ fn parse_timestamp(s: &str) -> Result<Timestamp, ParseSrtError> {
   }
 }
 
+struct StateBody {
+  header: Header,
+  start: usize,
+  end: usize,
+}
+
+impl StateBody {
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  const fn new(header: Header, start: usize, end: usize) -> Self {
+    Self { header, start, end }
+  }
+}
+
 /// State machine states for the SRT parser.
 enum State {
   /// Expecting a subtitle index number (or blank lines / BOM to skip).
   Index,
   /// Got an index, expecting the header (timeline) line.
-  Header { index: NonZeroU64 },
+  Header(NonZeroU64),
   /// Got the header, collecting body text lines.
-  Body {
-    header: Header,
-    body_start: usize,
-    body_end: usize,
-  },
+  Body(StateBody),
   /// Lossy recovery: skip lines until the next blank line, then go to `Index`.
   SkipToBlank,
   /// The iterator has encountered an error or is exhausted.
@@ -311,8 +407,8 @@ enum State {
 ///
 /// let subs: Vec<_> = Parser::strict(srt).collect::<Result<_, _>>().unwrap();
 /// assert_eq!(subs.len(), 2);
-/// assert_eq!(*subs[0].body(), "Hello world!");
-/// assert_eq!(*subs[1].body(), "Goodbye world!");
+/// assert_eq!(*subs[0].body_ref(), "Hello world!");
+/// assert_eq!(*subs[1].body_ref(), "Goodbye world!");
 /// # }
 /// ```
 pub struct Parser<'a> {
@@ -361,8 +457,8 @@ impl<'a> Parser<'a> {
   ///
   /// let subs: Vec<_> = Parser::lossy(srt).collect::<Result<_, _>>().unwrap();
   /// assert_eq!(subs.len(), 2);
-  /// assert_eq!(*subs[0].body(), "Good entry");
-  /// assert_eq!(*subs[1].body(), "Missing index entry");
+  /// assert_eq!(*subs[0].body_ref(), "Good entry");
+  /// assert_eq!(*subs[1].body_ref(), "Missing index entry");
   /// # }
   /// ```
   pub fn lossy(input: &'a str) -> Self {
@@ -422,16 +518,12 @@ impl<'a> Iterator for Parser<'a> {
                   got: index.get(),
                 }));
               }
-              self.state = State::Header { index };
+              self.state = State::Header(index);
             }
             // 2. Header line without index (missing index).
             Ok(Some(Token::Header(header))) if self.opts.allow_missing_index => {
               let offset = line.as_ptr() as usize - self.input.as_ptr() as usize + line.len();
-              self.state = State::Body {
-                header,
-                body_start: offset,
-                body_end: offset,
-              };
+              self.state = State::Body(StateBody::new(header, offset, offset));
             }
             // 3. Orphan text / no token / unrecognised line.
             Ok(_) | Err(_) if self.opts.ignore_orphan_text => {
@@ -449,7 +541,7 @@ impl<'a> Iterator for Parser<'a> {
             }
           }
         }
-        State::Header { index } => {
+        State::Header(index) => {
           let Some(line) = self.lines.next() else {
             self.state = State::Done;
             return if self.opts.ignore_broken_header {
@@ -464,11 +556,7 @@ impl<'a> Iterator for Parser<'a> {
             Ok(Some(Token::Header(mut header))) => {
               header.set_index(index);
               let offset = line.as_ptr() as usize - self.input.as_ptr() as usize + line.len();
-              self.state = State::Body {
-                header,
-                body_start: offset,
-                body_end: offset,
-              };
+              self.state = State::Body(StateBody::new(header, offset, offset));
             }
             _ if self.opts.ignore_broken_header => {
               if trimmed.is_empty() {
@@ -487,13 +575,10 @@ impl<'a> Iterator for Parser<'a> {
             }
           }
         }
-        State::Body {
-          ref header,
-          ref mut body_start,
-          ref mut body_end,
-        } => {
+        State::Body(ref mut body) => {
+          let StateBody { header, start, end } = body;
           let Some(line) = self.lines.next() else {
-            let body = body_slice(self.input, *body_start, *body_end);
+            let body = body_slice(self.input, *start, *end);
             let entry = Entry::new(header.clone(), body);
             if let Some(idx) = header.index() {
               self.last_index = idx.get();
@@ -504,7 +589,7 @@ impl<'a> Iterator for Parser<'a> {
 
           let trimmed = line.trim_start_matches('\u{feff}');
           if trimmed.is_empty() {
-            let body = body_slice(self.input, *body_start, *body_end);
+            let body = body_slice(self.input, *start, *end);
             let entry = Entry::new(header.clone(), body);
             if let Some(idx) = header.index() {
               self.last_index = idx.get();
@@ -515,10 +600,10 @@ impl<'a> Iterator for Parser<'a> {
 
           // Accumulate text line
           let line_offset = line.as_ptr() as usize - self.input.as_ptr() as usize;
-          if *body_start == *body_end {
-            *body_start = line_offset;
+          if *start == *end {
+            *start = line_offset;
           }
-          *body_end = line_offset + line.len();
+          *end = line_offset + line.len();
         }
       }
     }
@@ -592,9 +677,9 @@ const _: () = {
         self.inner.write_all(b"\n")?;
       }
       self.has_written = true;
-      let header = entry.header();
+      let header = entry.header_ref();
       self.inner.write_all(header.encode().as_str().as_bytes())?;
-      let body = entry.body().as_ref();
+      let body = entry.body_ref().as_ref();
       if !body.is_empty() {
         self.inner.write_all(body.as_bytes())?;
       }

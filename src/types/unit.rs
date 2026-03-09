@@ -25,6 +25,13 @@ impl FromStr for Minute {
 
 impl Minute {
   /// Create a new `Minute` with value 0.
+  ///
+  /// ```rust
+  /// use fasrt::types::Minute;
+  ///
+  /// let minute = Minute::new();
+  /// assert_eq!(minute.as_str(), "00");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new() -> Self {
     Self::with(0)
@@ -34,6 +41,13 @@ impl Minute {
   ///
   /// # Panics
   /// Panics if the value is greater than 59.
+  ///
+  /// ```rust
+  /// use fasrt::types::Minute;
+  ///
+  /// let minute = Minute::with(30);
+  /// assert_eq!(minute.as_str(), "30");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with(value: u8) -> Self {
     if value > 59 {
@@ -43,11 +57,25 @@ impl Minute {
   }
 
   /// Try to create a new `Minute` from a `u8`, returning `None` if the value is out of range.
+  ///
+  /// ```rust
+  /// use fasrt::types::Minute;
+  ///
+  /// assert_eq!(Minute::try_with(30), Some(Minute::with(30)));
+  /// assert_eq!(Minute::try_with(60), None);
+  /// ```
   pub const fn try_with(value: u8) -> Option<Self> {
     if value > 59 { None } else { Some(Self(value)) }
   }
 
   /// Returns the string representation of this `Minute`, zero-padded to 2 digits.
+  ///
+  /// ```rust
+  /// use fasrt::types::Minute;
+  ///
+  /// let minute = Minute::with(5);
+  /// assert_eq!(minute.as_str(), "05");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn as_str(&self) -> &'static str {
     minute_to_str!(self.0)
@@ -71,6 +99,13 @@ impl FromStr for Second {
 
 impl Second {
   /// Create a new `Second` with value 0.
+  ///
+  /// ```rust
+  /// use fasrt::types::Second;
+  ///
+  /// let second = Second::new();
+  /// assert_eq!(second.as_str(), "00");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new() -> Self {
     Self::with(0)
@@ -80,6 +115,13 @@ impl Second {
   ///
   /// # Panics
   /// Panics if the value is greater than 59.
+  ///
+  /// ```rust
+  /// use fasrt::types::Second;
+  ///
+  /// let second = Second::with(30);
+  /// assert_eq!(second.as_str(), "30");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with(value: u8) -> Self {
     if value > 59 {
@@ -89,11 +131,26 @@ impl Second {
   }
 
   /// Try to create a new `Second` from a `u8`, returning `None` if the value is out of range.
+  ///
+  /// ```rust
+  /// use fasrt::types::Second;
+  ///
+  /// assert_eq!(Second::try_with(30), Some(Second::with(30)));
+  /// assert_eq!(Second::try_with(60), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn try_with(value: u8) -> Option<Self> {
     if value > 59 { None } else { Some(Self(value)) }
   }
 
   /// Returns the string representation of this `Second`, zero-padded to 2 digits.
+  ///
+  /// ```rust
+  /// use fasrt::types::Second;
+  ///
+  /// let second = Second::with(5);
+  /// assert_eq!(second.as_str(), "05");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn as_str(&self) -> &'static str {
     second_to_str!(self.0)
@@ -117,6 +174,13 @@ impl FromStr for Hour {
 
 impl Hour {
   /// Create a new `Hour` with value 0.
+  ///
+  /// ```rust
+  /// use fasrt::types::Hour;
+  ///
+  /// let hour = Hour::new();
+  /// assert_eq!(hour.as_str(), "00");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new() -> Self {
     Self::with(0)
@@ -126,6 +190,13 @@ impl Hour {
   ///
   /// # Panics
   /// Panics if the value is greater than 999.
+  ///
+  /// ```rust
+  /// use fasrt::types::Hour;
+  ///
+  /// let hour = Hour::with(5);
+  /// assert_eq!(hour.as_str(), "05");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with(value: u16) -> Self {
     if value > 999 {
@@ -135,12 +206,29 @@ impl Hour {
   }
 
   /// Try to create a new `Hour` from a `u16`, returning `None` if the value is out of range.
+  ///
+  /// ```rust
+  /// use fasrt::types::Hour;
+  ///
+  /// assert_eq!(Hour::try_with(500), Some(Hour::with(500)));
+  /// assert_eq!(Hour::try_with(1000), None);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn try_with(value: u16) -> Option<Self> {
     if value > 999 { None } else { Some(Self(value)) }
   }
 
-  /// Returns the string representation of this `Hour`, zero-padded to 3 digits.
+  /// Returns the string representation of this `Hour`, zero-padded to 2 digits.
+  ///
+  /// ```rust
+  /// use fasrt::types::Hour;
+  ///
+  /// let hour = Hour::with(5);
+  /// assert_eq!(hour.as_str(), "05");
+  ///
+  /// let hour = Hour::with(123);
+  /// assert_eq!(hour.as_str(), "123");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn as_str(&self) -> &'static str {
     hour_to_str!(self.0)
@@ -164,6 +252,13 @@ impl FromStr for Millisecond {
 
 impl Millisecond {
   /// Create a new `Millisecond` with value 0.
+  ///
+  /// ```rust
+  /// use fasrt::types::Millisecond;
+  ///
+  /// let ms = Millisecond::new();
+  /// assert_eq!(ms.as_str(), "000");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new() -> Self {
     Self::with(0)
@@ -173,6 +268,13 @@ impl Millisecond {
   ///
   /// # Panics
   /// Panics if the value is greater than 999.
+  ///
+  /// ```rust
+  /// use fasrt::types::Millisecond;
+  ///
+  /// let ms = Millisecond::with(500);
+  /// assert_eq!(ms.as_str(), "500");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with(value: u16) -> Self {
     if value > 999 {
@@ -182,12 +284,26 @@ impl Millisecond {
   }
 
   /// Try to create a new `Millisecond` from a `u16`, returning `None` if the value is out of range.
+  ///
+  /// ```rust
+  /// use fasrt::types::Millisecond;
+  ///
+  /// assert_eq!(Millisecond::try_with(500), Some(Millisecond::with(500)));
+  /// assert_eq!(Millisecond::try_with(1000), None);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn try_with(value: u16) -> Option<Self> {
     if value > 999 { None } else { Some(Self(value)) }
   }
 
   /// Returns the string representation of this `Millisecond`, zero-padded to 3 digits.
+  ///
+  /// ```rust
+  /// use fasrt::types::Millisecond;
+  ///
+  /// let ms = Millisecond::with(5);
+  /// assert_eq!(ms.as_str(), "005");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn as_str(&self) -> &'static str {
     millisecond_to_str!(self.0)
