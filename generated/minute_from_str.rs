@@ -82,4 +82,4 @@ macro_rules! minute_from_str {
   }}
 }
 
-pub(super) use minute_from_str;
+pub(crate) use minute_from_str;

@@ -1022,4 +1022,4 @@ macro_rules! hour_from_str {
   }}
 }
 
-pub(super) use hour_from_str;
+pub(crate) use hour_from_str;

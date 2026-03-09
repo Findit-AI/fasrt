@@ -1009,4 +1009,4 @@ macro_rules! hour_to_str {
   }}
 }
 
-pub(super) use hour_to_str;
+pub(crate) use hour_to_str;
