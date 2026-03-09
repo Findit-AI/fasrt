@@ -291,7 +291,10 @@ enum State {
 /// # Example
 ///
 /// ```
-/// # #![cfg(any(feature = "std", feature = "alloc"))] {
+/// # #[cfg(not(any(feature = "std", feature = "alloc")))]
+/// # fn main() {}
+/// # #[cfg(any(feature = "std", feature = "alloc"))]
+/// # fn main() {
 /// # use std::vec::Vec;
 ///
 /// use fasrt::srt::Parser;
@@ -337,7 +340,10 @@ impl<'a> Parser<'a> {
   /// # Example
   ///
   /// ```
-  /// # #![cfg(any(feature = "std", feature = "alloc"))] {
+  /// # #[cfg(not(any(feature = "std", feature = "alloc")))]
+  /// # fn main() {}
+  /// # #[cfg(any(feature = "std", feature = "alloc"))]
+  /// # fn main() {
   /// # use std::vec::Vec;
   ///
   /// use fasrt::srt::Parser;
@@ -553,12 +559,13 @@ fn lex(line: &str) -> Result<Option<Token>, ParseSrtError> {
 /// writer.write(&Entry::new(header, "Hello world!")).unwrap();
 ///
 /// let output = String::from_utf8(buf).unwrap();
-/// assert_eq!(output, "1\n00:00:01,000 --> 00:00:04,000\nHello world!\n\n");
+/// assert_eq!(output, "1\n00:00:01,000 --> 00:00:04,000\nHello world!\n");
 /// ```
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct Writer<W> {
   inner: W,
+  has_written: bool,
 }
 
 #[cfg(feature = "std")]
@@ -570,18 +577,28 @@ const _: () = {
     /// Create a new writer wrapping the given [`std::io::Write`] target.
     #[cfg_attr(not(tarpaulin), inline(always))]
     pub const fn new(inner: W) -> Self {
-      Self { inner }
+      Self {
+        inner,
+        has_written: false,
+      }
     }
 
     /// Write a single subtitle entry.
+    ///
+    /// A blank line separator is emitted **between** entries, not after the
+    /// last one, matching canonical SRT format.
     pub fn write<T: AsRef<str>>(&mut self, entry: &Entry<T>) -> io::Result<()> {
+      if self.has_written {
+        self.inner.write_all(b"\n")?;
+      }
+      self.has_written = true;
       let header = entry.header();
       self.inner.write_all(header.encode().as_str().as_bytes())?;
       let body = entry.body().as_ref();
       if !body.is_empty() {
         self.inner.write_all(body.as_bytes())?;
       }
-      self.inner.write_all(b"\n\n")
+      self.inner.write_all(b"\n")
     }
 
     /// Write all entries from an iterator.

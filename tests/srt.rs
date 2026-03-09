@@ -1,5 +1,11 @@
 #![cfg(any(feature = "alloc", feature = "std"))]
 
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+extern crate alloc as std;
+
+#[cfg(feature = "std")]
+extern crate std;
+
 use core::num::NonZeroU64;
 use std::vec::Vec;
 
@@ -722,4 +728,153 @@ fn timestamp_to_duration() {
     Millisecond::with(0),
   );
   assert_eq!(ts.to_duration().as_millis(), 3_600_000);
+}
+
+// ── Writer tests (std only) ───────────────────────────────────────────────
+
+#[cfg(feature = "std")]
+mod writer {
+  use core::num::NonZeroU64;
+
+  use fasrt::{
+    srt::{Entry, Header, Parser, Timestamp, Writer},
+    types::*,
+  };
+
+  fn ts(s: u8, ms: u16) -> Timestamp {
+    Timestamp::from_hmsm(
+      Hour::with(0),
+      Minute::with(0),
+      Second::with(s),
+      Millisecond::with(ms),
+    )
+  }
+
+  fn entry(index: u64, start_s: u8, end_s: u8, body: &str) -> Entry<String> {
+    let header =
+      Header::new(ts(start_s, 0), ts(end_s, 0)).with_index(NonZeroU64::new(index).unwrap());
+    Entry::new(header, body.to_string())
+  }
+
+  fn write_to_string(f: impl FnOnce(&mut Writer<&mut Vec<u8>>)) -> String {
+    let mut buf = Vec::new();
+    let mut w = Writer::new(&mut buf);
+    f(&mut w);
+    String::from_utf8(buf).unwrap()
+  }
+
+  #[test]
+  fn write_single_entry() {
+    let out = write_to_string(|w| {
+      w.write(&entry(1, 1, 4, "Hello world!")).unwrap();
+    });
+    assert_eq!(out, "1\n00:00:01,000 --> 00:00:04,000\nHello world!\n");
+  }
+
+  #[test]
+  fn write_multiple_entries() {
+    let entries = vec![entry(1, 1, 4, "First"), entry(2, 5, 8, "Second")];
+    let out = write_to_string(|w| {
+      w.write_all(&entries).unwrap();
+    });
+    assert_eq!(
+      out,
+      "1\n00:00:01,000 --> 00:00:04,000\nFirst\n\n\
+       2\n00:00:05,000 --> 00:00:08,000\nSecond\n"
+    );
+  }
+
+  #[test]
+  fn write_empty_body() {
+    let out = write_to_string(|w| {
+      w.write(&entry(1, 1, 2, "")).unwrap();
+    });
+    assert_eq!(out, "1\n00:00:01,000 --> 00:00:02,000\n\n");
+  }
+
+  #[test]
+  fn write_multiline_body() {
+    let out = write_to_string(|w| {
+      w.write(&entry(1, 1, 4, "Line one\nLine two\nLine three"))
+        .unwrap();
+    });
+    assert_eq!(
+      out,
+      "1\n00:00:01,000 --> 00:00:04,000\nLine one\nLine two\nLine three\n"
+    );
+  }
+
+  #[test]
+  fn write_no_index() {
+    let header = Header::new(ts(1, 0), ts(4, 0));
+    let e: Entry<&str> = Entry::new(header, "No index");
+    let out = write_to_string(|w| {
+      w.write(&e).unwrap();
+    });
+    assert_eq!(out, "00:00:01,000 --> 00:00:04,000\nNo index\n");
+  }
+
+  #[test]
+  fn write_large_hours() {
+    let header = Header::new(
+      Timestamp::from_hmsm(
+        Hour::with(100),
+        Minute::with(59),
+        Second::with(59),
+        Millisecond::with(999),
+      ),
+      Timestamp::from_hmsm(
+        Hour::with(200),
+        Minute::with(0),
+        Second::with(0),
+        Millisecond::with(0),
+      ),
+    )
+    .with_index(NonZeroU64::new(1).unwrap());
+    let e: Entry<&str> = Entry::new(header, "Large");
+    let out = write_to_string(|w| {
+      w.write(&e).unwrap();
+    });
+    assert_eq!(out, "1\n100:59:59,999 --> 200:00:00,000\nLarge\n");
+  }
+
+  #[test]
+  fn write_zero_entries() {
+    let entries: Vec<Entry<String>> = vec![];
+    let out = write_to_string(|w| {
+      w.write_all(&entries).unwrap();
+    });
+    assert_eq!(out, "");
+  }
+
+  #[test]
+  fn write_into_inner() {
+    let buf = Vec::new();
+    let mut w = Writer::new(buf);
+    w.write(&entry(1, 1, 2, "test")).unwrap();
+    let inner = w.into_inner();
+    assert!(!inner.is_empty());
+  }
+
+  #[test]
+  fn write_roundtrip_with_parser() {
+    let original = "\
+1
+00:00:01,000 --> 00:00:04,000
+Hello world!
+
+2
+00:00:05,000 --> 00:00:08,000
+Goodbye world!
+";
+
+    let parsed: Vec<Entry<&str>> = Parser::strict(original).collect::<Result<_, _>>().unwrap();
+
+    let mut buf = Vec::new();
+    let mut w = Writer::new(&mut buf);
+    w.write_all(&parsed).unwrap();
+    let written = String::from_utf8(buf).unwrap();
+
+    assert_eq!(written, original);
+  }
 }
