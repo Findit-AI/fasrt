@@ -267,14 +267,8 @@ Styled cue
   assert_eq!(cues.len(), 1);
   let settings = cues[0].header_ref().settings().unwrap();
   assert_eq!(settings.vertical(), Some(Vertical::Rl));
-  assert_eq!(
-    settings.line(),
-    Some(&Line::new(LineValue::Percentage(50)))
-  );
-  assert_eq!(
-    settings.position(),
-    Some(&Position::new(10))
-  );
+  assert_eq!(settings.line(), Some(&Line::new(LineValue::Percentage(50))));
+  assert_eq!(settings.position(), Some(&Position::new(10)));
   assert_eq!(settings.size(), Some(Size::new(80)));
   assert_eq!(settings.align(), Some(Align::Center));
 }
@@ -292,7 +286,10 @@ Test
   let settings = cues[0].header_ref().settings().unwrap();
   assert_eq!(
     settings.line(),
-    Some(&Line::with_alignment(LineValue::Percentage(50), LineAlign::Start))
+    Some(&Line::with_alignment(
+      LineValue::Percentage(50),
+      LineAlign::Start
+    ))
   );
 }
 
@@ -307,10 +304,7 @@ Test
 
   let cues = collect_cues(vtt).unwrap();
   let settings = cues[0].header_ref().settings().unwrap();
-  assert_eq!(
-    settings.line(),
-    Some(&Line::new(LineValue::Number(-1)))
-  );
+  assert_eq!(settings.line(), Some(&Line::new(LineValue::Number(-1))));
 }
 
 #[test]

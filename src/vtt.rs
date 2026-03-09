@@ -212,13 +212,17 @@ fn parse_cue_settings(s: &str) -> CueSettings {
       break;
     }
     match key {
-      "vertical" => {
-        match value {
-          "rl" => { settings.set_vertical(Vertical::Rl); }
-          "lr" => { settings.set_vertical(Vertical::Lr); }
-          _ => { continue; }
+      "vertical" => match value {
+        "rl" => {
+          settings.set_vertical(Vertical::Rl);
         }
-      }
+        "lr" => {
+          settings.set_vertical(Vertical::Lr);
+        }
+        _ => {
+          continue;
+        }
+      },
       "line" => {
         // value can be `N%`, `N`, optionally followed by `,start|center|end`
         if let Some((val_str, align_str)) = value.split_once(',') {
@@ -226,7 +230,9 @@ fn parse_cue_settings(s: &str) -> CueSettings {
             "start" => LineAlign::Start,
             "center" => LineAlign::Center,
             "end" => LineAlign::End,
-            _ => { continue; }
+            _ => {
+              continue;
+            }
           };
           if let Some(v) = parse_line_value(val_str) {
             settings.set_line(Line::with_alignment(v, alignment));
@@ -242,7 +248,9 @@ fn parse_cue_settings(s: &str) -> CueSettings {
             "center" => PositionAlign::Center,
             "line-right" => PositionAlign::LineRight,
             "auto" => PositionAlign::Auto,
-            _ => { continue; }
+            _ => {
+              continue;
+            }
           };
           if let Some(pct) = parse_percentage(val_str) {
             settings.set_position(Position::with_alignment(pct, alignment));
@@ -256,16 +264,26 @@ fn parse_cue_settings(s: &str) -> CueSettings {
           settings.set_size(Size::new(pct));
         }
       }
-      "align" => {
-        match value {
-          "start" => { settings.set_align(Align::Start); }
-          "center" => { settings.set_align(Align::Center); }
-          "end" => { settings.set_align(Align::End); }
-          "left" => { settings.set_align(Align::Left); }
-          "right" => { settings.set_align(Align::Right); }
-          _ => { continue; }
+      "align" => match value {
+        "start" => {
+          settings.set_align(Align::Start);
         }
-      }
+        "center" => {
+          settings.set_align(Align::Center);
+        }
+        "end" => {
+          settings.set_align(Align::End);
+        }
+        "left" => {
+          settings.set_align(Align::Left);
+        }
+        "right" => {
+          settings.set_align(Align::Right);
+        }
+        _ => {
+          continue;
+        }
+      },
       "region" => {
         #[cfg(any(feature = "alloc", feature = "std"))]
         {
