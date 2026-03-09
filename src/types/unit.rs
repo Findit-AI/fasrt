@@ -309,3 +309,27 @@ impl Millisecond {
     millisecond_to_str!(self.0)
   }
 }
+
+#[test]
+#[should_panic]
+fn minute_panic() {
+  let _ = Minute::with(60);
+}
+
+#[test]
+#[should_panic]
+fn second_panic() {
+  let _ = Second::with(60);
+}
+
+#[test]
+#[should_panic]
+fn hour_panic() {
+  let _ = Hour::with(1000);
+}
+
+#[test]
+#[should_panic]
+fn millisecond_panic() {
+  let _ = Millisecond::with(1000);
+}

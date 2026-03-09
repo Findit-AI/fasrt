@@ -21,14 +21,14 @@ impl<const N: usize> core::ops::Deref for Buffer<N> {
 
   #[cfg_attr(not(tarpaulin), inline(always))]
   fn deref(&self) -> &Self::Target {
-    self.as_ref()
+    self.borrow()
   }
 }
 
 impl<const N: usize> AsRef<str> for Buffer<N> {
   #[cfg_attr(not(tarpaulin), inline(always))]
   fn as_ref(&self) -> &str {
-    self.borrow()
+    self
   }
 }
 
@@ -115,4 +115,18 @@ fn test_write_0() {
   let mut buf = Buffer::<10>::new();
   buf.fmt_u64(0);
   assert_eq!(buf.as_ref(), "0");
+}
+
+#[test]
+#[should_panic]
+fn test_len_panic() {
+  let buf = Buffer::<0>::new();
+  buf.len(); // 6 digits, but buffer can only hold 4 + length byte
+}
+
+#[test]
+#[should_panic]
+fn test_write_overflow() {
+  let mut buf = Buffer::<0>::new();
+  buf.incr_len(0);
 }

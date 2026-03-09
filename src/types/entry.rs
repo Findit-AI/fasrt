@@ -57,7 +57,7 @@ impl<H, T> Entry<H, T> {
   ///
   /// let mut entry = Entry::new("Header", "Body");
   /// *entry.header_mut() = "New Header";
-  /// assert_eq!(entry.header_ref(), &"New Header");
+  /// assert_eq!(entry.header_mut(), &"New Header");
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn header_mut(&mut self) -> &mut H {
