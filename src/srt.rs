@@ -4,7 +4,7 @@ use logos::{Lexer, Logos};
 
 use crate::error::*;
 
-pub use types::{Entry, Header, Timestamp};
+pub use types::{Entry, Header, Hour, Timestamp};
 
 mod types;
 

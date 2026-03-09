@@ -3,7 +3,7 @@ use logos::{Lexer, Logos};
 use crate::error::*;
 
 pub use types::{
-  Align, Block, Cue, CueHeader, CueId, CueSettings, Hour, Line, LineAlign, LineValue, Position,
+  Align, Block, Cue, CueId, CueSettings, Header, Hour, Line, LineAlign, LineValue, Position,
   PositionAlign, RegionId, Size, Timestamp, Vertical,
 };
 
@@ -148,7 +148,7 @@ fn parse_timestamp_long(s: &str) -> Result<Timestamp, ParseVttError> {
   let millis: crate::types::Millisecond = s[dot + 1..].parse()?;
   let hms = &s[..dot];
   let mut parts = hms.splitn(3, ':');
-  let h: u32 = parts
+  let h: u64 = parts
     .next()
     .unwrap()
     .parse()
@@ -190,7 +190,7 @@ fn is_timing_line(line: &str) -> bool {
 fn strip_leading(line: &str) -> &str {
   line
     .trim_start_matches('\u{feff}')
-    .trim_start_matches(|c: char| c == ' ' || c == '\t' || c == '\x0c')
+    .trim_start_matches([' ', '\t', '\x0c'])
 }
 
 /// Parse cue settings from the remainder of a timing line.
@@ -200,7 +200,7 @@ fn parse_cue_settings(s: &str) -> CueSettings {
     return settings;
   }
 
-  for token in s.split(|c: char| c == ' ' || c == '\t' || c == '\x0c') {
+  for token in s.split([' ', '\t', '\x0c']) {
     if token.is_empty() {
       continue;
     }
@@ -379,14 +379,14 @@ enum State {
 }
 
 struct CueBodyState {
-  header: CueHeader,
+  header: Header,
   start: usize,
   end: usize,
 }
 
 impl CueBodyState {
   #[cfg_attr(not(tarpaulin), inline(always))]
-  const fn new(header: CueHeader, start: usize, end: usize) -> Self {
+  const fn new(header: Header, start: usize, end: usize) -> Self {
     Self { header, start, end }
   }
 }
@@ -477,7 +477,7 @@ impl<'a> Parser<'a> {
 
 /// Try to lex a timing line. On success, returns the parsed header and
 /// the byte offset within `self.input` where the body starts.
-fn try_parse_timing(line: &str, input: &str) -> Option<(CueHeader, usize)> {
+fn try_parse_timing(line: &str, input: &str) -> Option<(Header, usize)> {
   let stripped = strip_leading(line);
   if !is_timing_line(stripped) {
     return None;
@@ -485,7 +485,7 @@ fn try_parse_timing(line: &str, input: &str) -> Option<(CueHeader, usize)> {
 
   match lex(stripped) {
     Ok(Some((Token::TimingLine((start, end)), matched_end))) => {
-      let mut header = CueHeader::new(start, end);
+      let mut header = Header::new(start, end);
       let settings_str = stripped[matched_end..].trim();
       let settings = parse_cue_settings(settings_str);
       if settings != CueSettings::default() {
@@ -753,13 +753,13 @@ fn body_slice(input: &str, start: usize, end: usize) -> &str {
 /// # Example
 ///
 /// ```
-/// use fasrt::vtt::{Writer, Cue, CueHeader, Timestamp, Block, Hour};
+/// use fasrt::vtt::{Writer, Cue, Header, Timestamp, Block, Hour};
 /// use fasrt::types::*;
 ///
 /// let mut buf = Vec::new();
 /// let mut writer = Writer::new(&mut buf);
 ///
-/// let header = CueHeader::new(
+/// let header = Header::new(
 ///   Timestamp::from_hmsm(Hour::new(), Minute::with(0), Second::with(1), Millisecond::with(0)),
 ///   Timestamp::from_hmsm(Hour::new(), Minute::with(0), Second::with(4), Millisecond::with(0)),
 /// );
@@ -941,7 +941,7 @@ impl<'a> Iterator for Lines<'a> {
       return None;
     }
 
-    let bytes = self.input[self.pos..].as_bytes();
+    let bytes = &self.input.as_bytes()[self.pos..];
     let mut i = 0;
     while i < bytes.len() {
       if bytes[i] == b'\n' {

@@ -1,20 +1,22 @@
 use core::time::Duration;
 
+use derive_more::{Display, From, Into, IsVariant, TryUnwrap, Unwrap};
+
 use crate::{
   types::{Entry as GenericEntry, *},
   utils::u64_digits,
 };
 
 /// A single cue entry in a WebVTT file.
-pub type Cue<T> = GenericEntry<CueHeader, T>;
+pub type Cue<T> = GenericEntry<Header, T>;
 
 /// The hour component of a WebVTT timestamp.
 ///
 /// Per the W3C spec, WebVTT hours have no upper limit ("one or more digits").
-/// This wraps a `u32` with no maximum constraint.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// This wraps a `u64` with no maximum constraint.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, From, Into)]
 #[repr(transparent)]
-pub struct Hour(pub(crate) u32);
+pub struct Hour(pub(crate) u64);
 
 impl Hour {
   /// Create a new `Hour` with value 0.
@@ -23,51 +25,37 @@ impl Hour {
   /// use fasrt::vtt::Hour;
   ///
   /// let hour = Hour::new();
-  /// assert_eq!(hour.as_u32(), 0);
+  /// assert_eq!(hour.as_u64(), 0);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new() -> Self {
     Self(0)
   }
 
-  /// Create a new `Hour` from a `u32`.
+  /// Create a new `Hour` from a `u64`.
   ///
   /// ```rust
   /// use fasrt::vtt::Hour;
   ///
   /// let hour = Hour::with(12345);
-  /// assert_eq!(hour.as_u32(), 12345);
+  /// assert_eq!(hour.as_u64(), 12345);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn with(value: u32) -> Self {
+  pub const fn with(value: u64) -> Self {
     Self(value)
   }
 
-  /// Returns the inner `u32` value.
+  /// Returns the inner `u64` value.
   ///
   /// ```rust
   /// use fasrt::vtt::Hour;
   ///
   /// let hour = Hour::with(42);
-  /// assert_eq!(hour.as_u32(), 42);
+  /// assert_eq!(hour.as_u64(), 42);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn as_u32(&self) -> u32 {
+  pub const fn as_u64(&self) -> u64 {
     self.0
-  }
-}
-
-impl From<u32> for Hour {
-  #[cfg_attr(not(tarpaulin), inline(always))]
-  fn from(value: u32) -> Self {
-    Self(value)
-  }
-}
-
-impl From<Hour> for u32 {
-  #[cfg_attr(not(tarpaulin), inline(always))]
-  fn from(hour: Hour) -> Self {
-    hour.0
   }
 }
 
@@ -86,7 +74,8 @@ impl core::fmt::Display for Hour {
 /// Per the W3C spec, WebVTT timestamps use a dot `.` to separate seconds
 /// from milliseconds (e.g. `01:30.000`), and hours are optional with no
 /// upper limit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[display("{}", self.encode().as_str())]
 pub struct Timestamp {
   /// Hours (unbounded per the W3C spec).
   hours: Hour,
@@ -96,20 +85,6 @@ pub struct Timestamp {
   minutes: Minute,
   /// Seconds (0–59).
   seconds: Second,
-}
-
-impl core::fmt::Display for Timestamp {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    if self.hours.0 == 0 {
-      write!(f, "{}:{}.{}", self.minutes, self.seconds, self.millis)
-    } else {
-      write!(
-        f,
-        "{}:{}:{}.{}",
-        self.hours, self.minutes, self.seconds, self.millis
-      )
-    }
-  }
 }
 
 impl Default for Timestamp {
@@ -262,12 +237,13 @@ impl Timestamp {
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn to_duration(&self) -> Duration {
-    let hours = self.hours.0 as u64;
     let minutes = self.minutes.0 as u64;
     let seconds = self.seconds.0 as u64;
     let millis = self.millis.0 as u64;
 
-    Duration::from_millis(hours * 3_600_000 + minutes * 60_000 + seconds * 1_000 + millis)
+    Duration::from_millis(
+      self.hours().as_u64() * 3_600_000 + minutes * 60_000 + seconds * 1_000 + millis,
+    )
   }
 
   /// Returns the encoded length of this timestamp.
@@ -282,7 +258,7 @@ impl Timestamp {
       base
     } else {
       // Hours: at least 2 digits, zero-padded
-      let digits = u64_digits(self.hours.0 as u64);
+      let digits = u64_digits(self.hours.as_u64());
       let hours_len = if digits < 2 { 2 } else { digits };
       hours_len + 1 + base // HH+:
     }
@@ -306,16 +282,19 @@ impl Timestamp {
   ///
   /// let ts = Timestamp::from_hmsm(Hour::with(12345), Minute::with(0), Second::with(0), Millisecond::with(0));
   /// assert_eq!(ts.encode().as_str(), "12345:00:00.000");
+  ///
+  /// let ts = Timestamp::from_hmsm(Hour::with(18446744073709551615), Minute::with(0), Second::with(0), Millisecond::with(0));
+  /// assert_eq!(ts.encode().as_str(), "18446744073709551615:00:00.000");
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn encode(&self) -> Buffer<20> {
+  pub const fn encode(&self) -> Buffer<31> {
     let mut buffer = Buffer::new();
     if self.hours.0 != 0 {
       // Pad to at least 2 digits
       if self.hours.0 < 10 {
         buffer.write_str("0");
       }
-      buffer.fmt_u64(self.hours.0 as u64);
+      buffer.fmt_u64(self.hours.0);
       buffer.write_str(":");
     }
     buffer.write_str(self.minutes().as_str());
@@ -330,7 +309,7 @@ impl Timestamp {
 /// The header of a WebVTT cue, containing optional identifier, timestamps,
 /// and optional cue settings.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CueHeader {
+pub struct Header {
   identifier: Option<CueId>,
   start: Timestamp,
   end: Timestamp,
@@ -402,51 +381,41 @@ pub struct CueSettings {
 }
 
 /// Writing direction for a cue.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
 pub enum Vertical {
   /// Right-to-left (`vertical:rl`).
+  #[display("rl")]
   Rl,
   /// Left-to-right (`vertical:lr`).
+  #[display("lr")]
   Lr,
 }
 
-impl core::fmt::Display for Vertical {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    match self {
-      Self::Rl => f.write_str("rl"),
-      Self::Lr => f.write_str("lr"),
-    }
-  }
-}
-
 /// Line position value.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant, Unwrap, TryUnwrap)]
+#[unwrap(ref, ref_mut)]
+#[try_unwrap(ref, ref_mut)]
 pub enum LineValue {
   /// A percentage value (0–100).
+  #[display("{_0}%")]
   Percentage(u8),
   /// A line number (can be negative).
+  #[display("{_0}")]
   Number(i32),
 }
 
 /// Line alignment.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
 pub enum LineAlign {
   /// `start`
+  #[display("start")]
   Start,
   /// `center`
+  #[display("center")]
   Center,
   /// `end`
+  #[display("end")]
   End,
-}
-
-impl core::fmt::Display for LineAlign {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    match self {
-      Self::Start => f.write_str("start"),
-      Self::Center => f.write_str("center"),
-      Self::End => f.write_str("end"),
-    }
-  }
 }
 
 /// Line setting: value and optional alignment.
@@ -459,27 +428,20 @@ pub struct Line {
 }
 
 /// Position alignment.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
 pub enum PositionAlign {
   /// `line-left`
+  #[display("line-left")]
   LineLeft,
   /// `center`
+  #[display("center")]
   Center,
   /// `line-right`
+  #[display("line-right")]
   LineRight,
   /// `auto`
+  #[display("auto")]
   Auto,
-}
-
-impl core::fmt::Display for PositionAlign {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    match self {
-      Self::LineLeft => f.write_str("line-left"),
-      Self::Center => f.write_str("center"),
-      Self::LineRight => f.write_str("line-right"),
-      Self::Auto => f.write_str("auto"),
-    }
-  }
 }
 
 /// Position setting: percentage value and optional alignment.
@@ -496,30 +458,23 @@ pub struct Position {
 pub struct Size(pub u8);
 
 /// Text alignment.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
 pub enum Align {
   /// `start`
+  #[display("start")]
   Start,
   /// `center`
+  #[display("center")]
   Center,
   /// `end`
+  #[display("end")]
   End,
   /// `left`
+  #[display("left")]
   Left,
   /// `right`
+  #[display("right")]
   Right,
-}
-
-impl core::fmt::Display for Align {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    match self {
-      Self::Start => f.write_str("start"),
-      Self::Center => f.write_str("center"),
-      Self::End => f.write_str("end"),
-      Self::Left => f.write_str("left"),
-      Self::Right => f.write_str("right"),
-    }
-  }
 }
 
 /// Region identifier.
@@ -565,8 +520,8 @@ impl core::fmt::Display for RegionId {
   }
 }
 
-impl CueHeader {
-  /// Create a new `CueHeader` with the given start and end timestamps.
+impl Header {
+  /// Create a new `Header` with the given start and end timestamps.
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new(start: Timestamp, end: Timestamp) -> Self {
     Self {
@@ -659,7 +614,9 @@ impl CueHeader {
 }
 
 /// A WebVTT block — either a cue, a note, a style, or a region definition.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, IsVariant, Unwrap, TryUnwrap)]
+#[unwrap(ref, ref_mut)]
+#[try_unwrap(ref, ref_mut)]
 pub enum Block<T> {
   /// A cue block containing timed text.
   Cue(Cue<T>),

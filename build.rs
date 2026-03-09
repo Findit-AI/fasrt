@@ -76,7 +76,7 @@ macro_rules! {name}_from_str {{
   }}}}
 }}
 
-pub(super) use {name}_from_str;
+pub(crate) use {name}_from_str;
 "###,
     out
   );
@@ -112,7 +112,7 @@ macro_rules! {name}_to_str {{
   }}}}
 }}
 
-pub(super) use {name}_to_str;
+pub(crate) use {name}_to_str;
 "###,
     out, name
   );
@@ -165,7 +165,7 @@ macro_rules! millisecond_from_str {{
   }}}}
 }}
 
-pub(super) use millisecond_from_str;
+pub(crate) use millisecond_from_str;
 "###,
     out
   );
@@ -201,7 +201,7 @@ macro_rules! millisecond_to_str {{
   }}}}
 }}
 
-pub(super) use millisecond_to_str;
+pub(crate) use millisecond_to_str;
 "###,
     out,
   );
@@ -251,7 +251,7 @@ macro_rules! hour_from_str {{
   }}}}
 }}
 
-pub(super) use hour_from_str;
+pub(crate) use hour_from_str;
 "###,
     out
   );
@@ -287,7 +287,7 @@ macro_rules! hour_to_str {{
   }}}}
 }}
 
-pub(super) use hour_to_str;
+pub(crate) use hour_to_str;
 "###,
     out,
   );

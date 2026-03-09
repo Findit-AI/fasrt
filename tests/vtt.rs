@@ -683,9 +683,7 @@ fn timestamp_to_duration() {
 mod writer {
   use fasrt::{
     types::*,
-    vtt::{
-      Align, Block, Cue, CueHeader, CueId, CueSettings, Hour, Parser, Size, Timestamp, Writer,
-    },
+    vtt::{Align, Block, Cue, CueId, CueSettings, Header, Hour, Parser, Size, Timestamp, Writer},
   };
 
   fn ts(s: u8, ms: u16) -> Timestamp {
@@ -698,7 +696,7 @@ mod writer {
   }
 
   fn simple_cue(start_s: u8, end_s: u8, body: &str) -> Block<String> {
-    let header = CueHeader::new(ts(start_s, 0), ts(end_s, 0));
+    let header = Header::new(ts(start_s, 0), ts(end_s, 0));
     Block::Cue(Cue::new(header, body.to_string()))
   }
 
@@ -733,7 +731,7 @@ mod writer {
   fn write_cue_with_identifier() {
     let out = write_to_string(|w| {
       let header =
-        CueHeader::new(ts(1, 0), ts(4, 0)).with_identifier(CueId::from_string("intro".into()));
+        Header::new(ts(1, 0), ts(4, 0)).with_identifier(CueId::from_string("intro".into()));
       let block = Block::Cue(Cue::new(header, "Hello!".to_string()));
       w.write(&block).unwrap();
     });
@@ -743,7 +741,7 @@ mod writer {
   #[test]
   fn write_cue_with_settings() {
     let out = write_to_string(|w| {
-      let header = CueHeader::new(ts(1, 0), ts(4, 0)).with_settings(CueSettings {
+      let header = Header::new(ts(1, 0), ts(4, 0)).with_settings(CueSettings {
         align: Some(Align::Center),
         size: Some(Size(80)),
         ..Default::default()

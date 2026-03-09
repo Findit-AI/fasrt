@@ -4,7 +4,7 @@
 //! against the corresponding .vtt files. Cue-parsing tests (entities, tags,
 //! tree-building) are out of scope for this text-level parser.
 
-#![cfg(feature = "std")]
+#![cfg(any(feature = "std", feature = "alloc"))]
 
 use fasrt::vtt::{Align, Block, Cue, Hour, ParseVttError, Parser, Size, Vertical};
 
@@ -119,7 +119,7 @@ fn wpt_ids() {
     let id = cues[i]
       .header_ref()
       .identifier()
-      .expect(&std::format!("cue {i} should have id"));
+      .unwrap_or_else(|| panic!("cue {i} should have id"));
     assert_eq!(id.as_str(), *expected_id, "cue {i} id mismatch");
   }
 }
@@ -142,7 +142,7 @@ fn wpt_newlines() {
     let cue_id = cues[i]
       .header_ref()
       .identifier()
-      .expect(&std::format!("cue {i} should have id"));
+      .unwrap_or_else(|| panic!("cue {i} should have id"));
     assert_eq!(cue_id.as_str(), *id, "cue {i} id mismatch");
     assert_eq!(*cues[i].body_ref(), *text, "cue {i} text mismatch");
   }
