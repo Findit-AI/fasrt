@@ -14,6 +14,9 @@ extern crate std;
 /// SRT subtitle parser.
 pub mod srt;
 
+/// WebVTT subtitle parser and writer.
+pub mod vtt;
+
 /// The types module contains the public types used by this crate.
 pub mod types;
 
