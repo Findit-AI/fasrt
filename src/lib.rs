@@ -1,4 +1,4 @@
-//! A blazing fast SRT subtitle parser and writer in Rust.
+//! A blazing fast, zero-copy subtitle parser and writer for SRT and WebVTT in Rust.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
