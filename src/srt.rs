@@ -630,7 +630,7 @@ fn lex(line: &str) -> Result<Option<Token>, ParseSrtError> {
 /// # Example
 ///
 /// ```
-/// use fasrt::srt::{Writer, Entry, Header, Timestamp};
+/// use fasrt::srt::{Writer, Entry, Header, Hour, Timestamp};
 /// use fasrt::types::*;
 ///
 /// let mut buf = Vec::new();

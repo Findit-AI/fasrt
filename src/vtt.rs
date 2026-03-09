@@ -213,81 +213,63 @@ fn parse_cue_settings(s: &str) -> CueSettings {
     }
     match key {
       "vertical" => {
-        settings.vertical = match value {
-          "rl" => Some(Vertical::Rl),
-          "lr" => Some(Vertical::Lr),
-          _ => {
-            continue;
-          }
-        };
+        match value {
+          "rl" => { settings.set_vertical(Vertical::Rl); }
+          "lr" => { settings.set_vertical(Vertical::Lr); }
+          _ => { continue; }
+        }
       }
       "line" => {
         // value can be `N%`, `N`, optionally followed by `,start|center|end`
         if let Some((val_str, align_str)) = value.split_once(',') {
           let alignment = match align_str {
-            "start" => Some(LineAlign::Start),
-            "center" => Some(LineAlign::Center),
-            "end" => Some(LineAlign::End),
-            _ => {
-              continue;
-            }
+            "start" => LineAlign::Start,
+            "center" => LineAlign::Center,
+            "end" => LineAlign::End,
+            _ => { continue; }
           };
-          settings.line = parse_line_value(val_str).map(|v| Line {
-            value: v,
-            alignment,
-          });
-        } else {
-          settings.line = parse_line_value(value).map(|v| Line {
-            value: v,
-            alignment: None,
-          });
+          if let Some(v) = parse_line_value(val_str) {
+            settings.set_line(Line::with_alignment(v, alignment));
+          }
+        } else if let Some(v) = parse_line_value(value) {
+          settings.set_line(Line::new(v));
         }
       }
       "position" => {
         if let Some((val_str, align_str)) = value.split_once(',') {
           let alignment = match align_str {
-            "line-left" => Some(PositionAlign::LineLeft),
-            "center" => Some(PositionAlign::Center),
-            "line-right" => Some(PositionAlign::LineRight),
-            "auto" => Some(PositionAlign::Auto),
-            _ => {
-              continue;
-            }
+            "line-left" => PositionAlign::LineLeft,
+            "center" => PositionAlign::Center,
+            "line-right" => PositionAlign::LineRight,
+            "auto" => PositionAlign::Auto,
+            _ => { continue; }
           };
           if let Some(pct) = parse_percentage(val_str) {
-            settings.position = Some(Position {
-              value: pct,
-              alignment,
-            });
+            settings.set_position(Position::with_alignment(pct, alignment));
           }
         } else if let Some(pct) = parse_percentage(value) {
-          settings.position = Some(Position {
-            value: pct,
-            alignment: None,
-          });
+          settings.set_position(Position::new(pct));
         }
       }
       "size" => {
         if let Some(pct) = parse_percentage(value) {
-          settings.size = Some(Size(pct));
+          settings.set_size(Size::new(pct));
         }
       }
       "align" => {
         match value {
-          "start" => settings.align = Some(Align::Start),
-          "center" => settings.align = Some(Align::Center),
-          "end" => settings.align = Some(Align::End),
-          "left" => settings.align = Some(Align::Left),
-          "right" => settings.align = Some(Align::Right),
-          _ => {
-            continue;
-          }
-        };
+          "start" => { settings.set_align(Align::Start); }
+          "center" => { settings.set_align(Align::Center); }
+          "end" => { settings.set_align(Align::End); }
+          "left" => { settings.set_align(Align::Left); }
+          "right" => { settings.set_align(Align::Right); }
+          _ => { continue; }
+        }
       }
       "region" => {
         #[cfg(any(feature = "alloc", feature = "std"))]
         {
-          settings.region = Some(RegionId::from_string(value.into()));
+          settings.set_region(RegionId::from_string(value.into()));
         }
         #[cfg(not(any(feature = "alloc", feature = "std")))]
         {
@@ -325,11 +307,11 @@ fn parse_line_value(s: &str) -> Option<LineValue> {
 fn format_cue_settings(settings: &CueSettings, buf: &mut std::vec::Vec<u8>) {
   use std::io::Write as _;
 
-  if let Some(v) = &settings.vertical {
+  if let Some(v) = settings.vertical() {
     let _ = write!(buf, " vertical:{v}");
   }
-  if let Some(line) = &settings.line {
-    match line.value {
+  if let Some(line) = settings.line() {
+    match line.value() {
       LineValue::Percentage(p) => {
         let _ = write!(buf, " line:{p}%");
       }
@@ -337,23 +319,23 @@ fn format_cue_settings(settings: &CueSettings, buf: &mut std::vec::Vec<u8>) {
         let _ = write!(buf, " line:{n}");
       }
     }
-    if let Some(align) = &line.alignment {
+    if let Some(align) = line.alignment() {
       let _ = write!(buf, ",{align}");
     }
   }
-  if let Some(pos) = &settings.position {
-    let _ = write!(buf, " position:{}%", pos.value);
-    if let Some(align) = &pos.alignment {
+  if let Some(pos) = settings.position() {
+    let _ = write!(buf, " position:{}%", pos.value());
+    if let Some(align) = pos.alignment() {
       let _ = write!(buf, ",{align}");
     }
   }
-  if let Some(size) = &settings.size {
-    let _ = write!(buf, " size:{}%", size.0);
+  if let Some(size) = settings.size() {
+    let _ = write!(buf, " size:{}%", size.value());
   }
-  if let Some(align) = &settings.align {
+  if let Some(align) = settings.align() {
     let _ = write!(buf, " align:{align}");
   }
-  if let Some(region) = &settings.region {
+  if let Some(region) = settings.region() {
     let _ = write!(buf, " region:{region}");
   }
 }

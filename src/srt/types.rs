@@ -31,7 +31,7 @@ impl Hour {
   /// Create a new `Hour` with value 0.
   ///
   /// ```rust
-  /// use fasrt::types::Hour;
+  /// use fasrt::srt::Hour;
   ///
   /// let hour = Hour::new();
   /// assert_eq!(hour.as_str(), "00");
@@ -47,7 +47,7 @@ impl Hour {
   /// Panics if the value is greater than 999.
   ///
   /// ```rust
-  /// use fasrt::types::Hour;
+  /// use fasrt::srt::Hour;
   ///
   /// let hour = Hour::with(5);
   /// assert_eq!(hour.as_str(), "05");
@@ -63,7 +63,7 @@ impl Hour {
   /// Try to create a new `Hour` from a `u16`, returning `None` if the value is out of range.
   ///
   /// ```rust
-  /// use fasrt::types::Hour;
+  /// use fasrt::srt::Hour;
   ///
   /// assert_eq!(Hour::try_with(500), Some(Hour::with(500)));
   /// assert_eq!(Hour::try_with(1000), None);
@@ -76,7 +76,7 @@ impl Hour {
   /// Returns the string representation of this `Hour`, zero-padded to 2 digits.
   ///
   /// ```rust
-  /// use fasrt::types::Hour;
+  /// use fasrt::srt::Hour;
   ///
   /// let hour = Hour::with(5);
   /// assert_eq!(hour.as_str(), "05");
@@ -107,7 +107,8 @@ pub struct Timestamp {
 impl Default for Timestamp {
   /// ```rust
   /// use fasrt::srt::Timestamp;
-  /// use fasrt::types::{Hour, Minute, Second, Millisecond};
+  /// use fasrt::srt::Hour;
+  /// use fasrt::types::{Minute, Second, Millisecond};
   ///
   /// let timestamp = Timestamp::default();
   /// assert_eq!(timestamp.hours(), Hour::with(0));
@@ -172,7 +173,7 @@ impl Timestamp {
   ///
   /// ```rust
   /// use fasrt::srt::Timestamp;
-  /// use fasrt::types::Hour;
+  /// use fasrt::srt::Hour;
   ///
   /// let timestamp = Timestamp::default().with_hours(Hour::with(1));
   /// assert_eq!(timestamp.hours(), Hour::with(1));
@@ -232,7 +233,7 @@ impl Timestamp {
   ///
   /// ```rust
   /// use fasrt::srt::Timestamp;
-  /// use fasrt::types::Hour;
+  /// use fasrt::srt::Hour;
   ///
   /// let mut timestamp = Timestamp::default();
   /// timestamp.set_hours(Hour::with(1));
@@ -296,7 +297,8 @@ impl Timestamp {
   ///
   /// ```rust
   /// use fasrt::srt::Timestamp;
-  /// use fasrt::types::{Hour, Minute, Second, Millisecond};
+  /// use fasrt::srt::Hour;
+  /// use fasrt::types::{Minute, Second, Millisecond};
   ///
   /// let mut timestamp = Timestamp::default();
   /// timestamp.set_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4));
@@ -325,7 +327,8 @@ impl Timestamp {
   /// ```rust
   /// use core::time::Duration;
   /// use fasrt::srt::Timestamp;
-  /// use fasrt::types::{Hour, Minute, Second, Millisecond};
+  /// use fasrt::srt::Hour;
+  /// use fasrt::types::{Minute, Second, Millisecond};
   ///
   /// let timestamp = Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4));
   /// let duration = timestamp.to_duration();
@@ -345,7 +348,8 @@ impl Timestamp {
   ///
   /// ```rust
   /// use fasrt::srt::Timestamp;
-  /// use fasrt::types::{Hour, Minute, Second, Millisecond};
+  /// use fasrt::srt::Hour;
+  /// use fasrt::types::{Minute, Second, Millisecond};
   ///
   /// let timestamp = Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4));
   /// assert_eq!(timestamp.encoded_len(), 12);
@@ -362,7 +366,8 @@ impl Timestamp {
   ///
   /// ```rust
   /// use fasrt::srt::Timestamp;
-  /// use fasrt::types::{Hour, Minute, Second, Millisecond};
+  /// use fasrt::srt::Hour;
+  /// use fasrt::types::{Minute, Second, Millisecond};
   ///
   /// let timestamp = Timestamp::from_hmsm(Hour::with(1), Minute::with(2), Second::with(3), Millisecond::with(4));
   /// assert_eq!(timestamp.encode().as_str(), "01:02:03,004");
@@ -503,8 +508,8 @@ impl Header {
   ///
   /// ```rust
   /// use fasrt::{
-  ///   srt::{Header, Timestamp},
-  ///   types::{Hour, Minute, Second, Millisecond},
+  ///   srt::{Header, Hour, Timestamp},
+  ///   types::{Minute, Second, Millisecond},
   /// };
   ///
   /// let mut header = Header::new(Timestamp::default(), Timestamp::default());
@@ -521,8 +526,8 @@ impl Header {
   ///
   /// ```rust
   /// use fasrt::{
-  ///   srt::{Header, Timestamp},
-  ///   types::{Hour, Minute, Second, Millisecond},
+  ///   srt::{Header, Hour, Timestamp},
+  ///   types::{Minute, Second, Millisecond},
   /// };
   ///
   /// let mut header = Header::new(Timestamp::default(), Timestamp::default());
@@ -552,8 +557,8 @@ impl Header {
   ///
   /// ```rust
   /// use fasrt::{
-  ///   srt::{Header, Timestamp},
-  ///   types::{Hour, Minute, Second, Millisecond},
+  ///   srt::{Header, Hour, Timestamp},
+  ///   types::{Minute, Second, Millisecond},
   /// };
   ///
   /// let mut header = Header::new(Timestamp::default(), Timestamp::default());
@@ -570,8 +575,8 @@ impl Header {
   ///
   /// ```rust
   /// use fasrt::{
-  ///   srt::{Header, Timestamp},
-  ///   types::{Hour, Minute, Second, Millisecond},
+  ///   srt::{Header, Hour, Timestamp},
+  ///   types::{Minute, Second, Millisecond},
   /// };
   ///
   /// let mut header = Header::new(Timestamp::default(), Timestamp::default());
@@ -610,7 +615,7 @@ impl Header {
   /// Format this timestamp to a SRT timestamp string.
   ///
   /// ```rust
-  /// use fasrt::{srt::{Header, Timestamp}, types::Hour};
+  /// use fasrt::srt::{Header, Hour, Timestamp};
   /// use core::num::NonZeroU64;
   ///
   /// let header = Header::new(Timestamp::default(), Timestamp::default()).with_index(NonZeroU64::new(u64::MAX).unwrap());

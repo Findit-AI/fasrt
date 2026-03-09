@@ -266,23 +266,17 @@ Styled cue
   let cues = collect_cues(vtt).unwrap();
   assert_eq!(cues.len(), 1);
   let settings = cues[0].header_ref().settings().unwrap();
-  assert_eq!(settings.vertical, Some(Vertical::Rl));
+  assert_eq!(settings.vertical(), Some(Vertical::Rl));
   assert_eq!(
-    settings.line,
-    Some(Line {
-      value: LineValue::Percentage(50),
-      alignment: None,
-    })
+    settings.line(),
+    Some(&Line::new(LineValue::Percentage(50)))
   );
   assert_eq!(
-    settings.position,
-    Some(Position {
-      value: 10,
-      alignment: None,
-    })
+    settings.position(),
+    Some(&Position::new(10))
   );
-  assert_eq!(settings.size, Some(Size(80)));
-  assert_eq!(settings.align, Some(Align::Center));
+  assert_eq!(settings.size(), Some(Size::new(80)));
+  assert_eq!(settings.align(), Some(Align::Center));
 }
 
 #[test]
@@ -297,11 +291,8 @@ Test
   let cues = collect_cues(vtt).unwrap();
   let settings = cues[0].header_ref().settings().unwrap();
   assert_eq!(
-    settings.line,
-    Some(Line {
-      value: LineValue::Percentage(50),
-      alignment: Some(LineAlign::Start),
-    })
+    settings.line(),
+    Some(&Line::with_alignment(LineValue::Percentage(50), LineAlign::Start))
   );
 }
 
@@ -317,11 +308,8 @@ Test
   let cues = collect_cues(vtt).unwrap();
   let settings = cues[0].header_ref().settings().unwrap();
   assert_eq!(
-    settings.line,
-    Some(Line {
-      value: LineValue::Number(-1),
-      alignment: None,
-    })
+    settings.line(),
+    Some(&Line::new(LineValue::Number(-1)))
   );
 }
 
@@ -337,11 +325,8 @@ Test
   let cues = collect_cues(vtt).unwrap();
   let settings = cues[0].header_ref().settings().unwrap();
   assert_eq!(
-    settings.position,
-    Some(Position {
-      value: 50,
-      alignment: Some(PositionAlign::LineLeft),
-    })
+    settings.position(),
+    Some(&Position::with_alignment(50, PositionAlign::LineLeft))
   );
 }
 
@@ -357,7 +342,7 @@ fn parse_all_align_values() {
     let vtt = std::format!("WEBVTT\n\n00:00:01.000 --> 00:00:04.000 align:{value}\nTest\n");
     let cues = collect_cues(&vtt).unwrap();
     assert_eq!(
-      cues[0].header_ref().settings().unwrap().align,
+      cues[0].header_ref().settings().unwrap().align(),
       Some(expected)
     );
   }
@@ -374,7 +359,7 @@ Test
 
   let cues = collect_cues(vtt).unwrap();
   assert_eq!(
-    cues[0].header_ref().settings().unwrap().vertical,
+    cues[0].header_ref().settings().unwrap().vertical(),
     Some(Vertical::Lr)
   );
 }
@@ -741,11 +726,11 @@ mod writer {
   #[test]
   fn write_cue_with_settings() {
     let out = write_to_string(|w| {
-      let header = Header::new(ts(1, 0), ts(4, 0)).with_settings(CueSettings {
-        align: Some(Align::Center),
-        size: Some(Size(80)),
-        ..Default::default()
-      });
+      let header = Header::new(ts(1, 0), ts(4, 0)).with_settings(
+        CueSettings::default()
+          .with_align(Align::Center)
+          .with_size(Size::new(80)),
+      );
       let block = Block::Cue(Cue::new(header, "Styled".to_string()));
       w.write(&block).unwrap();
     });

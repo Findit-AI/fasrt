@@ -366,18 +366,491 @@ impl core::fmt::Display for CueId {
 /// `vertical`, `line`, `position`, `size`, `align`, `region`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CueSettings {
-  /// Writing direction (`vertical:rl` or `vertical:lr`).
-  pub vertical: Option<Vertical>,
-  /// Line position.
-  pub line: Option<Line>,
-  /// Text position.
-  pub position: Option<Position>,
-  /// Cue size as a percentage (0–100).
-  pub size: Option<Size>,
-  /// Text alignment.
-  pub align: Option<Align>,
-  /// Region identifier.
-  pub region: Option<RegionId>,
+  vertical: Option<Vertical>,
+  line: Option<Line>,
+  position: Option<Position>,
+  size: Option<Size>,
+  align: Option<Align>,
+  region: Option<RegionId>,
+}
+
+impl CueSettings {
+  /// Returns the writing direction setting.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Vertical};
+  ///
+  /// let s = CueSettings::default();
+  /// assert_eq!(s.vertical(), None);
+  ///
+  /// let s = CueSettings::default().with_vertical(Vertical::Rl);
+  /// assert_eq!(s.vertical(), Some(Vertical::Rl));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn vertical(&self) -> Option<Vertical> {
+    self.vertical
+  }
+
+  /// Sets the writing direction (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Vertical};
+  ///
+  /// let s = CueSettings::default().with_vertical(Vertical::Lr);
+  /// assert_eq!(s.vertical(), Some(Vertical::Lr));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_vertical(mut self, vertical: Vertical) -> Self {
+    self.vertical = Some(vertical);
+    self
+  }
+
+  /// Sets the writing direction.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Vertical};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.set_vertical(Vertical::Rl);
+  /// assert_eq!(s.vertical(), Some(Vertical::Rl));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_vertical(&mut self, vertical: Vertical) -> &mut Self {
+    self.vertical = Some(vertical);
+    self
+  }
+
+  /// Sets the writing direction from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Vertical};
+  ///
+  /// let s = CueSettings::default().maybe_vertical(Some(Vertical::Lr));
+  /// assert_eq!(s.vertical(), Some(Vertical::Lr));
+  ///
+  /// let s = CueSettings::default().maybe_vertical(None);
+  /// assert_eq!(s.vertical(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn maybe_vertical(mut self, vertical: Option<Vertical>) -> Self {
+    self.vertical = vertical;
+    self
+  }
+
+  /// Sets the writing direction from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Vertical};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.update_vertical(Some(Vertical::Rl));
+  /// assert_eq!(s.vertical(), Some(Vertical::Rl));
+  /// s.update_vertical(None);
+  /// assert_eq!(s.vertical(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn update_vertical(&mut self, vertical: Option<Vertical>) -> &mut Self {
+    self.vertical = vertical;
+    self
+  }
+
+  /// Returns the line position setting.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Line, LineValue};
+  ///
+  /// let s = CueSettings::default();
+  /// assert_eq!(s.line(), None);
+  ///
+  /// let s = CueSettings::default().with_line(Line::new(LineValue::Number(-1)));
+  /// assert_eq!(s.line().unwrap().value(), LineValue::Number(-1));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn line(&self) -> Option<&Line> {
+    self.line.as_ref()
+  }
+
+  /// Sets the line position (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Line, LineValue};
+  ///
+  /// let s = CueSettings::default().with_line(Line::new(LineValue::Percentage(50)));
+  /// assert_eq!(s.line().unwrap().value(), LineValue::Percentage(50));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_line(mut self, line: Line) -> Self {
+    self.line = Some(line);
+    self
+  }
+
+  /// Sets the line position.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Line, LineValue};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.set_line(Line::new(LineValue::Number(3)));
+  /// assert_eq!(s.line().unwrap().value(), LineValue::Number(3));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_line(&mut self, line: Line) -> &mut Self {
+    self.line = Some(line);
+    self
+  }
+
+  /// Sets the line position from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Line, LineValue};
+  ///
+  /// let s = CueSettings::default().maybe_line(Some(Line::new(LineValue::Number(5))));
+  /// assert_eq!(s.line().unwrap().value(), LineValue::Number(5));
+  ///
+  /// let s = CueSettings::default().maybe_line(None);
+  /// assert_eq!(s.line(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn maybe_line(mut self, line: Option<Line>) -> Self {
+    self.line = line;
+    self
+  }
+
+  /// Sets the line position from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Line, LineValue};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.update_line(Some(Line::new(LineValue::Percentage(25))));
+  /// assert!(s.line().is_some());
+  /// s.update_line(None);
+  /// assert_eq!(s.line(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn update_line(&mut self, line: Option<Line>) -> &mut Self {
+    self.line = line;
+    self
+  }
+
+  /// Returns the text position setting.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Position};
+  ///
+  /// let s = CueSettings::default();
+  /// assert_eq!(s.position(), None);
+  ///
+  /// let s = CueSettings::default().with_position(Position::new(50));
+  /// assert_eq!(s.position().unwrap().value(), 50);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn position(&self) -> Option<&Position> {
+    self.position.as_ref()
+  }
+
+  /// Sets the text position (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Position, PositionAlign};
+  ///
+  /// let s = CueSettings::default()
+  ///   .with_position(Position::with_alignment(25, PositionAlign::LineLeft));
+  /// let pos = s.position().unwrap();
+  /// assert_eq!(pos.value(), 25);
+  /// assert_eq!(pos.alignment(), Some(PositionAlign::LineLeft));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_position(mut self, position: Position) -> Self {
+    self.position = Some(position);
+    self
+  }
+
+  /// Sets the text position.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Position};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.set_position(Position::new(75));
+  /// assert_eq!(s.position().unwrap().value(), 75);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_position(&mut self, position: Position) -> &mut Self {
+    self.position = Some(position);
+    self
+  }
+
+  /// Sets the text position from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Position};
+  ///
+  /// let s = CueSettings::default().maybe_position(Some(Position::new(60)));
+  /// assert_eq!(s.position().unwrap().value(), 60);
+  ///
+  /// let s = CueSettings::default().maybe_position(None);
+  /// assert_eq!(s.position(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn maybe_position(mut self, position: Option<Position>) -> Self {
+    self.position = position;
+    self
+  }
+
+  /// Sets the text position from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Position};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.update_position(Some(Position::new(40)));
+  /// assert!(s.position().is_some());
+  /// s.update_position(None);
+  /// assert_eq!(s.position(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn update_position(&mut self, position: Option<Position>) -> &mut Self {
+    self.position = position;
+    self
+  }
+
+  /// Returns the cue size setting.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Size};
+  ///
+  /// let s = CueSettings::default();
+  /// assert_eq!(s.size(), None);
+  ///
+  /// let s = CueSettings::default().with_size(Size::new(80));
+  /// assert_eq!(s.size().unwrap().value(), 80);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn size(&self) -> Option<Size> {
+    self.size
+  }
+
+  /// Sets the cue size (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Size};
+  ///
+  /// let s = CueSettings::default().with_size(Size::new(100));
+  /// assert_eq!(s.size().unwrap().value(), 100);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_size(mut self, size: Size) -> Self {
+    self.size = Some(size);
+    self
+  }
+
+  /// Sets the cue size.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Size};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.set_size(Size::new(50));
+  /// assert_eq!(s.size().unwrap().value(), 50);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_size(&mut self, size: Size) -> &mut Self {
+    self.size = Some(size);
+    self
+  }
+
+  /// Sets the cue size from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Size};
+  ///
+  /// let s = CueSettings::default().maybe_size(Some(Size::new(60)));
+  /// assert_eq!(s.size().unwrap().value(), 60);
+  ///
+  /// let s = CueSettings::default().maybe_size(None);
+  /// assert_eq!(s.size(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn maybe_size(mut self, size: Option<Size>) -> Self {
+    self.size = size;
+    self
+  }
+
+  /// Sets the cue size from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Size};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.update_size(Some(Size::new(30)));
+  /// assert!(s.size().is_some());
+  /// s.update_size(None);
+  /// assert_eq!(s.size(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn update_size(&mut self, size: Option<Size>) -> &mut Self {
+    self.size = size;
+    self
+  }
+
+  /// Returns the text alignment setting.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Align};
+  ///
+  /// let s = CueSettings::default();
+  /// assert_eq!(s.align(), None);
+  ///
+  /// let s = CueSettings::default().with_align(Align::Center);
+  /// assert_eq!(s.align(), Some(Align::Center));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn align(&self) -> Option<Align> {
+    self.align
+  }
+
+  /// Sets the text alignment (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Align};
+  ///
+  /// let s = CueSettings::default().with_align(Align::Start);
+  /// assert_eq!(s.align(), Some(Align::Start));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_align(mut self, align: Align) -> Self {
+    self.align = Some(align);
+    self
+  }
+
+  /// Sets the text alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Align};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.set_align(Align::End);
+  /// assert_eq!(s.align(), Some(Align::End));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_align(&mut self, align: Align) -> &mut Self {
+    self.align = Some(align);
+    self
+  }
+
+  /// Sets the text alignment from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Align};
+  ///
+  /// let s = CueSettings::default().maybe_align(Some(Align::Left));
+  /// assert_eq!(s.align(), Some(Align::Left));
+  ///
+  /// let s = CueSettings::default().maybe_align(None);
+  /// assert_eq!(s.align(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn maybe_align(mut self, align: Option<Align>) -> Self {
+    self.align = align;
+    self
+  }
+
+  /// Sets the text alignment from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, Align};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.update_align(Some(Align::Right));
+  /// assert_eq!(s.align(), Some(Align::Right));
+  /// s.update_align(None);
+  /// assert_eq!(s.align(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn update_align(&mut self, align: Option<Align>) -> &mut Self {
+    self.align = align;
+    self
+  }
+
+  /// Returns the region identifier setting.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, RegionId};
+  ///
+  /// let s = CueSettings::default();
+  /// assert!(s.region().is_none());
+  ///
+  /// let s = CueSettings::default().with_region(RegionId::from_static("r1"));
+  /// assert_eq!(s.region().unwrap().as_str(), "r1");
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn region(&self) -> Option<&RegionId> {
+    self.region.as_ref()
+  }
+
+  /// Sets the region identifier (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, RegionId};
+  ///
+  /// let s = CueSettings::default().with_region(RegionId::from_static("header"));
+  /// assert_eq!(s.region().unwrap().as_str(), "header");
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_region(mut self, region: RegionId) -> Self {
+    self.region = Some(region);
+    self
+  }
+
+  /// Sets the region identifier.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, RegionId};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.set_region(RegionId::from_static("footer"));
+  /// assert_eq!(s.region().unwrap().as_str(), "footer");
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_region(&mut self, region: RegionId) -> &mut Self {
+    self.region = Some(region);
+    self
+  }
+
+  /// Sets the region identifier from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, RegionId};
+  ///
+  /// let s = CueSettings::default().maybe_region(Some(RegionId::from_static("r1")));
+  /// assert_eq!(s.region().unwrap().as_str(), "r1");
+  ///
+  /// let s = CueSettings::default().maybe_region(None);
+  /// assert!(s.region().is_none());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn maybe_region(mut self, region: Option<RegionId>) -> Self {
+    self.region = region;
+    self
+  }
+
+  /// Sets the region identifier from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{CueSettings, RegionId};
+  ///
+  /// let mut s = CueSettings::default();
+  /// s.update_region(Some(RegionId::from_static("nav")));
+  /// assert!(s.region().is_some());
+  /// s.update_region(None);
+  /// assert!(s.region().is_none());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn update_region(&mut self, region: Option<RegionId>) -> &mut Self {
+    self.region = region;
+    self
+  }
 }
 
 /// Writing direction for a cue.
@@ -421,10 +894,137 @@ pub enum LineAlign {
 /// Line setting: value and optional alignment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Line {
-  /// The line value.
-  pub value: LineValue,
-  /// Optional line alignment.
-  pub alignment: Option<LineAlign>,
+  value: LineValue,
+  alignment: Option<LineAlign>,
+}
+
+impl Line {
+  /// Create a new `Line` with the given value and no alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue};
+  ///
+  /// let line = Line::new(LineValue::Percentage(50));
+  /// assert_eq!(line.value(), LineValue::Percentage(50));
+  /// assert_eq!(line.alignment(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn new(value: LineValue) -> Self {
+    Self {
+      value,
+      alignment: None,
+    }
+  }
+
+  /// Create a new `Line` with the given value and alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue, LineAlign};
+  ///
+  /// let line = Line::with_alignment(LineValue::Number(-1), LineAlign::Start);
+  /// assert_eq!(line.value(), LineValue::Number(-1));
+  /// assert_eq!(line.alignment(), Some(LineAlign::Start));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_alignment(value: LineValue, alignment: LineAlign) -> Self {
+    Self {
+      value,
+      alignment: Some(alignment),
+    }
+  }
+
+  /// Returns the line value.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue};
+  ///
+  /// let line = Line::new(LineValue::Number(3));
+  /// assert_eq!(line.value(), LineValue::Number(3));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn value(&self) -> LineValue {
+    self.value
+  }
+
+  /// Sets the line value.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue};
+  ///
+  /// let mut line = Line::new(LineValue::Number(1));
+  /// line.set_value(LineValue::Percentage(80));
+  /// assert_eq!(line.value(), LineValue::Percentage(80));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn set_value(&mut self, value: LineValue) -> &mut Self {
+    self.value = value;
+    self
+  }
+
+  /// Returns the line alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue, LineAlign};
+  ///
+  /// let line = Line::new(LineValue::Number(0));
+  /// assert_eq!(line.alignment(), None);
+  ///
+  /// let line = Line::with_alignment(LineValue::Number(0), LineAlign::Center);
+  /// assert_eq!(line.alignment(), Some(LineAlign::Center));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn alignment(&self) -> Option<LineAlign> {
+    self.alignment
+  }
+
+  /// Sets the line alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue, LineAlign};
+  ///
+  /// let mut line = Line::new(LineValue::Percentage(50));
+  /// line.set_alignment(LineAlign::End);
+  /// assert_eq!(line.alignment(), Some(LineAlign::End));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn set_alignment(&mut self, alignment: LineAlign) -> &mut Self {
+    self.alignment = Some(alignment);
+    self
+  }
+
+  /// Sets the line alignment from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue, LineAlign};
+  ///
+  /// let line = Line::new(LineValue::Number(0)).maybe_alignment(Some(LineAlign::Start));
+  /// assert_eq!(line.alignment(), Some(LineAlign::Start));
+  ///
+  /// let line = Line::new(LineValue::Number(0)).maybe_alignment(None);
+  /// assert_eq!(line.alignment(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn maybe_alignment(mut self, alignment: Option<LineAlign>) -> Self {
+    self.alignment = alignment;
+    self
+  }
+
+  /// Sets the line alignment from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Line, LineValue, LineAlign};
+  ///
+  /// let mut line = Line::new(LineValue::Percentage(50));
+  /// line.update_alignment(Some(LineAlign::Center));
+  /// assert_eq!(line.alignment(), Some(LineAlign::Center));
+  /// line.update_alignment(None);
+  /// assert_eq!(line.alignment(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn update_alignment(&mut self, alignment: Option<LineAlign>) -> &mut Self {
+    self.alignment = alignment;
+    self
+  }
 }
 
 /// Position alignment.
@@ -447,15 +1047,185 @@ pub enum PositionAlign {
 /// Position setting: percentage value and optional alignment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
-  /// The position percentage (0–100).
-  pub value: u8,
-  /// Optional position alignment.
-  pub alignment: Option<PositionAlign>,
+  value: u8,
+  alignment: Option<PositionAlign>,
+}
+
+impl Position {
+  /// Create a new `Position` with the given percentage and no alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::Position;
+  ///
+  /// let pos = Position::new(50);
+  /// assert_eq!(pos.value(), 50);
+  /// assert_eq!(pos.alignment(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn new(value: u8) -> Self {
+    Self {
+      value,
+      alignment: None,
+    }
+  }
+
+  /// Create a new `Position` with the given percentage and alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Position, PositionAlign};
+  ///
+  /// let pos = Position::with_alignment(25, PositionAlign::LineLeft);
+  /// assert_eq!(pos.value(), 25);
+  /// assert_eq!(pos.alignment(), Some(PositionAlign::LineLeft));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_alignment(value: u8, alignment: PositionAlign) -> Self {
+    Self {
+      value,
+      alignment: Some(alignment),
+    }
+  }
+
+  /// Returns the position percentage (0–100).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::Position;
+  ///
+  /// let pos = Position::new(75);
+  /// assert_eq!(pos.value(), 75);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn value(&self) -> u8 {
+    self.value
+  }
+
+  /// Sets the position percentage.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::Position;
+  ///
+  /// let mut pos = Position::new(10);
+  /// pos.set_value(90);
+  /// assert_eq!(pos.value(), 90);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn set_value(&mut self, value: u8) -> &mut Self {
+    self.value = value;
+    self
+  }
+
+  /// Returns the position alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Position, PositionAlign};
+  ///
+  /// let pos = Position::new(50);
+  /// assert_eq!(pos.alignment(), None);
+  ///
+  /// let pos = Position::with_alignment(50, PositionAlign::Center);
+  /// assert_eq!(pos.alignment(), Some(PositionAlign::Center));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn alignment(&self) -> Option<PositionAlign> {
+    self.alignment
+  }
+
+  /// Sets the position alignment.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Position, PositionAlign};
+  ///
+  /// let mut pos = Position::new(50);
+  /// pos.set_alignment(PositionAlign::LineRight);
+  /// assert_eq!(pos.alignment(), Some(PositionAlign::LineRight));
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn set_alignment(&mut self, alignment: PositionAlign) -> &mut Self {
+    self.alignment = Some(alignment);
+    self
+  }
+
+  /// Sets the position alignment from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Position, PositionAlign};
+  ///
+  /// let pos = Position::new(50).maybe_alignment(Some(PositionAlign::Center));
+  /// assert_eq!(pos.alignment(), Some(PositionAlign::Center));
+  ///
+  /// let pos = Position::new(50).maybe_alignment(None);
+  /// assert_eq!(pos.alignment(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn maybe_alignment(mut self, alignment: Option<PositionAlign>) -> Self {
+    self.alignment = alignment;
+    self
+  }
+
+  /// Sets the position alignment from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Position, PositionAlign};
+  ///
+  /// let mut pos = Position::new(50);
+  /// pos.update_alignment(Some(PositionAlign::Auto));
+  /// assert_eq!(pos.alignment(), Some(PositionAlign::Auto));
+  /// pos.update_alignment(None);
+  /// assert_eq!(pos.alignment(), None);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn update_alignment(&mut self, alignment: Option<PositionAlign>) -> &mut Self {
+    self.alignment = alignment;
+    self
+  }
 }
 
 /// Size setting: percentage (0–100).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Size(pub u8);
+pub struct Size(u8);
+
+impl Size {
+  /// Create a new `Size` from a percentage (0–100).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::Size;
+  ///
+  /// let size = Size::new(80);
+  /// assert_eq!(size.value(), 80);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn new(value: u8) -> Self {
+    Self(value)
+  }
+
+  /// Returns the size percentage (0–100).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::Size;
+  ///
+  /// let size = Size::new(100);
+  /// assert_eq!(size.value(), 100);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn value(&self) -> u8 {
+    self.0
+  }
+
+  /// Sets the size percentage.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::Size;
+  ///
+  /// let mut size = Size::new(50);
+  /// size.set_value(75);
+  /// assert_eq!(size.value(), 75);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn set_value(&mut self, value: u8) -> &mut Self {
+    self.0 = value;
+    self
+  }
+}
 
 /// Text alignment.
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
@@ -533,12 +1303,30 @@ impl Header {
   }
 
   /// Returns the cue identifier, if any.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueId};
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new());
+  /// assert!(header.identifier().is_none());
+  ///
+  /// let header = header.with_identifier(CueId::from_static("intro"));
+  /// assert_eq!(header.identifier().unwrap().as_str(), "intro");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn identifier(&self) -> Option<&CueId> {
     self.identifier.as_ref()
   }
 
-  /// Sets the cue identifier.
+  /// Sets the cue identifier (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueId};
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new())
+  ///   .with_identifier(CueId::from_static("cue-1"));
+  /// assert_eq!(header.identifier().unwrap().as_str(), "cue-1");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn with_identifier(mut self, id: CueId) -> Self {
     self.identifier = Some(id);
@@ -546,19 +1334,81 @@ impl Header {
   }
 
   /// Sets the cue identifier.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueId};
+  ///
+  /// let mut header = Header::new(Timestamp::new(), Timestamp::new());
+  /// header.set_identifier(CueId::from_static("cue-2"));
+  /// assert_eq!(header.identifier().unwrap().as_str(), "cue-2");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_identifier(&mut self, id: CueId) -> &mut Self {
     self.identifier = Some(id);
     self
   }
 
+  /// Sets the cue identifier from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueId};
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new())
+  ///   .maybe_identifier(Some(CueId::from_static("id")));
+  /// assert_eq!(header.identifier().unwrap().as_str(), "id");
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new())
+  ///   .maybe_identifier(None);
+  /// assert!(header.identifier().is_none());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn maybe_identifier(mut self, id: Option<CueId>) -> Self {
+    self.identifier = id;
+    self
+  }
+
+  /// Sets the cue identifier from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueId};
+  ///
+  /// let mut header = Header::new(Timestamp::new(), Timestamp::new());
+  /// header.update_identifier(Some(CueId::from_static("x")));
+  /// assert!(header.identifier().is_some());
+  /// header.update_identifier(None);
+  /// assert!(header.identifier().is_none());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn update_identifier(&mut self, id: Option<CueId>) -> &mut Self {
+    self.identifier = id;
+    self
+  }
+
   /// Returns the start timestamp.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let ts = Timestamp::from_hmsm(Hour::with(0), Minute::with(1), Second::with(0), Millisecond::with(0));
+  /// let header = Header::new(ts, Timestamp::new());
+  /// assert_eq!(header.start(), ts);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn start(&self) -> Timestamp {
     self.start
   }
 
-  /// Sets the start timestamp.
+  /// Sets the start timestamp (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let ts = Timestamp::from_hmsm(Hour::with(0), Minute::with(2), Second::with(0), Millisecond::with(0));
+  /// let header = Header::new(Timestamp::new(), Timestamp::new()).with_start(ts);
+  /// assert_eq!(header.start(), ts);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with_start(mut self, start: Timestamp) -> Self {
     self.start = start;
@@ -566,6 +1416,16 @@ impl Header {
   }
 
   /// Sets the start timestamp.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let mut header = Header::new(Timestamp::new(), Timestamp::new());
+  /// let ts = Timestamp::from_hmsm(Hour::with(0), Minute::with(3), Second::with(0), Millisecond::with(0));
+  /// header.set_start(ts);
+  /// assert_eq!(header.start(), ts);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn set_start(&mut self, start: Timestamp) -> &mut Self {
     self.start = start;
@@ -573,12 +1433,30 @@ impl Header {
   }
 
   /// Returns the end timestamp.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let ts = Timestamp::from_hmsm(Hour::with(0), Minute::with(4), Second::with(0), Millisecond::with(0));
+  /// let header = Header::new(Timestamp::new(), ts);
+  /// assert_eq!(header.end(), ts);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn end(&self) -> Timestamp {
     self.end
   }
 
-  /// Sets the end timestamp.
+  /// Sets the end timestamp (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let ts = Timestamp::from_hmsm(Hour::with(0), Minute::with(5), Second::with(0), Millisecond::with(0));
+  /// let header = Header::new(Timestamp::new(), Timestamp::new()).with_end(ts);
+  /// assert_eq!(header.end(), ts);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with_end(mut self, end: Timestamp) -> Self {
     self.end = end;
@@ -586,6 +1464,16 @@ impl Header {
   }
 
   /// Sets the end timestamp.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let mut header = Header::new(Timestamp::new(), Timestamp::new());
+  /// let ts = Timestamp::from_hmsm(Hour::with(0), Minute::with(6), Second::with(0), Millisecond::with(0));
+  /// header.set_end(ts);
+  /// assert_eq!(header.end(), ts);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn set_end(&mut self, end: Timestamp) -> &mut Self {
     self.end = end;
@@ -593,12 +1481,30 @@ impl Header {
   }
 
   /// Returns the cue settings, if any.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueSettings, Align};
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new());
+  /// assert!(header.settings().is_none());
+  ///
+  /// let header = header.with_settings(CueSettings::default().with_align(Align::Center));
+  /// assert_eq!(header.settings().unwrap().align(), Some(Align::Center));
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn settings(&self) -> Option<&CueSettings> {
     self.settings.as_ref()
   }
 
-  /// Sets the cue settings.
+  /// Sets the cue settings (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueSettings, Size};
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new())
+  ///   .with_settings(CueSettings::default().with_size(Size::new(80)));
+  /// assert_eq!(header.settings().unwrap().size().unwrap().value(), 80);
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn with_settings(mut self, settings: CueSettings) -> Self {
     self.settings = Some(settings);
@@ -606,9 +1512,53 @@ impl Header {
   }
 
   /// Sets the cue settings.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueSettings, Vertical};
+  ///
+  /// let mut header = Header::new(Timestamp::new(), Timestamp::new());
+  /// header.set_settings(CueSettings::default().with_vertical(Vertical::Rl));
+  /// assert_eq!(header.settings().unwrap().vertical(), Some(Vertical::Rl));
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_settings(&mut self, settings: CueSettings) -> &mut Self {
     self.settings = Some(settings);
+    self
+  }
+
+  /// Sets the cue settings from an `Option` (builder pattern).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueSettings, Align};
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new())
+  ///   .maybe_settings(Some(CueSettings::default().with_align(Align::End)));
+  /// assert_eq!(header.settings().unwrap().align(), Some(Align::End));
+  ///
+  /// let header = Header::new(Timestamp::new(), Timestamp::new())
+  ///   .maybe_settings(None);
+  /// assert!(header.settings().is_none());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn maybe_settings(mut self, settings: Option<CueSettings>) -> Self {
+    self.settings = settings;
+    self
+  }
+
+  /// Sets the cue settings from an `Option`.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::{Header, Timestamp, CueSettings, Size};
+  ///
+  /// let mut header = Header::new(Timestamp::new(), Timestamp::new());
+  /// header.update_settings(Some(CueSettings::default().with_size(Size::new(50))));
+  /// assert!(header.settings().is_some());
+  /// header.update_settings(None);
+  /// assert!(header.settings().is_none());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn update_settings(&mut self, settings: Option<CueSettings>) -> &mut Self {
+    self.settings = settings;
     self
   }
 }

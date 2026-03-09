@@ -335,7 +335,7 @@ fn wpt_settings_align() {
   ];
 
   for (i, expected_align) in expected.iter().enumerate() {
-    let actual = cues[i].header_ref().settings().and_then(|s| s.align);
+    let actual = cues[i].header_ref().settings().and_then(|s| s.align());
     assert_eq!(actual, *expected_align, "cue {i} align mismatch");
   }
 }
@@ -363,7 +363,7 @@ fn wpt_settings_vertical() {
   ];
 
   for (i, expected_v) in expected.iter().enumerate() {
-    let actual = cues[i].header_ref().settings().and_then(|s| s.vertical);
+    let actual = cues[i].header_ref().settings().and_then(|s| s.vertical());
     assert_eq!(actual, *expected_v, "cue {i} vertical mismatch");
   }
 }
@@ -386,7 +386,7 @@ fn wpt_settings_size() {
     cues[0]
       .header_ref()
       .settings()
-      .and_then(|s| s.size.map(|s| s.0)),
+      .and_then(|s| s.size().map(|s| s.value())),
     None
   );
   // cue 1: size:2%
@@ -394,7 +394,7 @@ fn wpt_settings_size() {
     cues[1]
       .header_ref()
       .settings()
-      .and_then(|s| s.size.map(|s| s.0)),
+      .and_then(|s| s.size().map(|s| s.value())),
     Some(2)
   );
   // cue 2: size:0%
@@ -402,7 +402,7 @@ fn wpt_settings_size() {
     cues[2]
       .header_ref()
       .settings()
-      .and_then(|s| s.size.map(|s| s.0)),
+      .and_then(|s| s.size().map(|s| s.value())),
     Some(0)
   );
   // cue 3: size:00%
@@ -410,7 +410,7 @@ fn wpt_settings_size() {
     cues[3]
       .header_ref()
       .settings()
-      .and_then(|s| s.size.map(|s| s.0)),
+      .and_then(|s| s.size().map(|s| s.value())),
     Some(0)
   );
   // cue 4: size:100%
@@ -418,7 +418,7 @@ fn wpt_settings_size() {
     cues[4]
       .header_ref()
       .settings()
-      .and_then(|s| s.size.map(|s| s.0)),
+      .and_then(|s| s.size().map(|s| s.value())),
     Some(100)
   );
   // cue 5: size:50%
@@ -426,7 +426,7 @@ fn wpt_settings_size() {
     cues[5]
       .header_ref()
       .settings()
-      .and_then(|s| s.size.map(|s| s.0)),
+      .and_then(|s| s.size().map(|s| s.value())),
     Some(50)
   );
   // cue 6: size:1.5% — our u8 parse can't handle floats, so None
@@ -444,17 +444,17 @@ fn wpt_settings_multiple() {
 
   // Cue 0: align:start line:1% vertical:lr size:50% position:25%
   let s0 = cues[0].header_ref().settings().unwrap();
-  assert_eq!(s0.align, Some(Align::Start));
-  assert_eq!(s0.vertical, Some(Vertical::Lr));
-  assert_eq!(s0.size, Some(Size(50)));
-  assert_eq!(s0.position.map(|p| p.value), Some(25));
+  assert_eq!(s0.align(), Some(Align::Start));
+  assert_eq!(s0.vertical(), Some(Vertical::Lr));
+  assert_eq!(s0.size(), Some(Size::new(50)));
+  assert_eq!(s0.position().map(|p| p.value()), Some(25));
 
   // Cue 1: align:center line:1 vertical:rl size:0% position:100%
   let s1 = cues[1].header_ref().settings().unwrap();
-  assert_eq!(s1.align, Some(Align::Center));
-  assert_eq!(s1.vertical, Some(Vertical::Rl));
-  assert_eq!(s1.size, Some(Size(0)));
-  assert_eq!(s1.position.map(|p| p.value), Some(100));
+  assert_eq!(s1.align(), Some(Align::Center));
+  assert_eq!(s1.vertical(), Some(Vertical::Rl));
+  assert_eq!(s1.size(), Some(Size::new(0)));
+  assert_eq!(s1.position().map(|p| p.value()), Some(100));
 }
 
 // ── whitespace-chars.vtt ────────────────────────────────────────────────────
