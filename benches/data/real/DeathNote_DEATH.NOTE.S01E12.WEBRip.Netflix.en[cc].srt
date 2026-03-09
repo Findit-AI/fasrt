@@ -1,0 +1,1942 @@
+﻿1
+00:00:00,083 --> 00:00:02,336
+[theme music playing]
+
+2
+00:01:22,583 --> 00:01:28,505
+LOVE
+
+3
+00:01:28,589 --> 00:01:29,548
+YAGAMI
+
+4
+00:01:29,673 --> 00:01:31,174
+[Soichiro] Light, Ryuzaki has decided
+
+5
+00:01:31,258 --> 00:01:33,385
+that he'd like you to help
+with the investigation.
+
+6
+00:01:33,468 --> 00:01:36,013
+If you're still interested, then you need
+to come here right away.
+
+7
+00:01:36,597 --> 00:01:38,265
+-[Light] Okay, Dad.
+-[Ryuk crunching]
+
+8
+00:01:40,183 --> 00:01:43,687
+All along I've been trying to find a way
+to get involved in the investigation.
+
+9
+00:01:44,062 --> 00:01:46,356
+But I never thought
+they would actually approach me.
+
+10
+00:01:46,565 --> 00:01:49,651
+Now I'll have access
+to classified information about the case,
+
+11
+00:01:49,818 --> 00:01:52,654
+which means I can learn more
+about this other Kira.
+
+12
+00:01:52,904 --> 00:01:55,365
+I need to figure out
+what this impostor is all about
+
+13
+00:01:55,490 --> 00:01:57,951
+before someone else
+on the Task Force beats me to it.
+
+14
+00:01:59,911 --> 00:02:02,289
+-[L] Thank you, Light.
+-Not at all.
+
+15
+00:02:02,581 --> 00:02:05,626
+After all, I want to catch Kira
+as much as you do, Ryuga.
+
+16
+00:02:06,001 --> 00:02:08,128
+I'll have to ask that you call me
+"Ryuzaki" here.
+
+17
+00:02:08,253 --> 00:02:08,879
+Huh?
+
+18
+00:02:09,212 --> 00:02:10,297
+I'm Matsui.
+
+19
+00:02:10,380 --> 00:02:11,381
+I'm Aihara.
+
+20
+00:02:11,590 --> 00:02:12,924
+And I'm Asahi.
+
+21
+00:02:14,259 --> 00:02:15,385
+Yes, of course.
+
+22
+00:02:15,761 --> 00:02:18,472
+Then, perhaps I should call myself
+"Light Asahi?"
+
+23
+00:02:18,930 --> 00:02:20,015
+[L] Yes, please do.
+
+24
+00:02:20,390 --> 00:02:23,352
+To keep things simple from this point on,
+I'll call you "Light."
+
+25
+00:02:24,102 --> 00:02:25,562
+Okay, let's get down to work.
+
+26
+00:02:25,854 --> 00:02:28,649
+You can start by looking over
+all the information we've collected.
+
+27
+00:02:28,732 --> 00:02:30,525
+I'd also like you to examine these videos.
+
+28
+00:02:31,109 --> 00:02:33,695
+They were sent to the TV station
+but were never aired.
+
+29
+00:02:34,071 --> 00:02:36,406
+For security reasons,
+you're not permitted to take notes,
+
+30
+00:02:36,490 --> 00:02:38,367
+and all materials must remain here.
+
+31
+00:02:38,492 --> 00:02:39,368
+I understand.
+
+32
+00:02:39,826 --> 00:02:41,161
+We will begin now.
+
+33
+00:02:41,662 --> 00:02:42,829
+[beeping]
+
+34
+00:02:44,581 --> 00:02:45,749
+Light...
+
+35
+00:02:47,709 --> 00:02:49,252
+THE PREVIOUS NIGHT
+
+36
+00:02:49,461 --> 00:02:52,047
+Well then, we need to ask Light Yagami
+to assist us.
+
+37
+00:02:52,130 --> 00:02:55,092
+However, we cannot tell him
+that we're considering the possibility
+
+38
+00:02:55,175 --> 00:02:56,468
+of a second Kira.
+
+39
+00:02:56,593 --> 00:03:00,013
+Are you serious? But wouldn't that make
+working together a bit difficult?
+
+40
+00:03:00,389 --> 00:03:03,892
+He's right. Why even bother asking him
+to work with us?
+
+41
+00:03:04,059 --> 00:03:05,852
+[L] Well, I didn't mean indefinitely.
+
+42
+00:03:06,061 --> 00:03:08,522
+I'm curious to see what his impression
+of these tapes will be
+
+43
+00:03:08,605 --> 00:03:09,564
+prior to knowing ours.
+
+44
+00:03:09,648 --> 00:03:10,524
+COPY 1
+
+45
+00:03:10,691 --> 00:03:13,568
+Light's deductive reasoning
+is really quite incredible.
+
+46
+00:03:13,735 --> 00:03:16,947
+He may suspect that these tapes
+are the work of a second Kira,
+
+47
+00:03:17,030 --> 00:03:19,366
+an impostor or copycat
+imitating the original.
+
+48
+00:03:19,908 --> 00:03:21,702
+But the basis for the second Kira theory
+
+49
+00:03:21,785 --> 00:03:23,537
+is that the victims
+of these recent killings
+
+50
+00:03:23,620 --> 00:03:26,081
+were minor criminals who don't fit
+the normal profile.
+
+51
+00:03:26,248 --> 00:03:29,084
+Without hearing our explanation,
+how will Light ever know that?
+
+52
+00:03:29,292 --> 00:03:31,169
+[L] Yes, but there's more to it than that.
+
+53
+00:03:31,420 --> 00:03:33,880
+The suspect that we've been pursuing
+up until now
+
+54
+00:03:33,964 --> 00:03:37,426
+has needed both a name and a face
+to kill his victims.
+
+55
+00:03:37,634 --> 00:03:39,845
+But there's something different
+happening here.
+
+56
+00:03:40,011 --> 00:03:43,390
+Recall that Mr. Ukita was killed
+the moment he arrived at the station,
+
+57
+00:03:44,641 --> 00:03:46,810
+and this Kira demanded only
+that I appear on TV
+
+58
+00:03:46,977 --> 00:03:48,770
+but made no request for my name.
+
+59
+00:03:49,146 --> 00:03:51,064
+This implies that the second Kira
+
+60
+00:03:51,148 --> 00:03:53,400
+only needs to see a person's face
+to kill them.
+
+61
+00:03:54,359 --> 00:03:56,778
+So, I'll ask Light to look over
+all of our information
+
+62
+00:03:56,862 --> 00:03:58,321
+as well as our video evidence.
+
+63
+00:03:58,405 --> 00:04:01,408
+If he comes to the conclusion
+that there could be a second suspect
+
+64
+00:04:01,491 --> 00:04:04,453
+then he'd be almost completely cleared
+of suspicion in this case.
+
+65
+00:04:04,578 --> 00:04:06,329
+[Soichiro]
+But how will that prove anything?
+
+66
+00:04:07,205 --> 00:04:09,875
+Logically, if he's really Kira,
+he'll want me dead,
+
+67
+00:04:09,958 --> 00:04:12,836
+seeing as I'm the one leading
+the investigation against him right now.
+
+68
+00:04:13,086 --> 00:04:14,421
+And the ways things are going,
+
+69
+00:04:14,546 --> 00:04:16,506
+if I comply
+with this new subject's demands
+
+70
+00:04:16,631 --> 00:04:20,051
+and appear on TV in three days,
+there's a very good chance I will die.
+
+71
+00:04:20,844 --> 00:04:25,348
+I can't see the real Kira jeopardizing
+such an easy opportunity to get rid of me.
+
+72
+00:04:25,432 --> 00:04:26,725
+Okay, but are you suggesting
+
+73
+00:04:26,808 --> 00:04:29,269
+that if my son does not come
+to the same conclusion,
+
+74
+00:04:29,352 --> 00:04:31,229
+there's an even greater chance
+that he is guilty?
+
+75
+00:04:31,563 --> 00:04:35,233
+No. In that case, there will still only be
+a five-percent chance.
+
+76
+00:04:35,525 --> 00:04:38,612
+We'll inform him that we are investigating
+the possibility of a copycat
+
+77
+00:04:38,695 --> 00:04:41,323
+and have him cooperate with us as planned.
+
+78
+00:04:41,907 --> 00:04:43,074
+[sighs]
+
+79
+00:04:45,202 --> 00:04:47,245
+[Kira] Now that you've seen
+proof of my powers,
+
+80
+00:04:47,412 --> 00:04:49,956
+you should have no trouble
+believing that I am Kira.
+
+81
+00:04:50,415 --> 00:04:53,335
+-On the designated...
+-[Light] This video is so mediocre,
+
+82
+00:04:53,543 --> 00:04:55,170
+it's making me sick to my stomach.
+
+83
+00:04:55,253 --> 00:04:57,547
+I don't know,
+maybe it's because I'm the real one.
+
+84
+00:04:57,714 --> 00:05:01,384
+But this is a complete disgrace
+to everything Kira stands for.
+
+85
+00:05:02,886 --> 00:05:04,262
+Something's not right here.
+
+86
+00:05:04,888 --> 00:05:07,557
+Seems unusual that no one bothered
+to explain this video to me.
+
+87
+00:05:08,058 --> 00:05:09,226
+It's not like them.
+
+88
+00:05:09,559 --> 00:05:12,395
+Well, in any case,
+I'd be stupid to comment on it.
+
+89
+00:05:12,604 --> 00:05:14,356
+It's probably best if I say nothing.
+
+90
+00:05:14,481 --> 00:05:17,150
+If I just leave it alone, L dies.
+
+91
+00:05:17,734 --> 00:05:19,444
+So, what do you make of this, Light?
+
+92
+00:05:19,528 --> 00:05:21,363
+Have you come to any conclusions?
+
+93
+00:05:21,446 --> 00:05:22,489
+Hmm?
+
+94
+00:05:24,574 --> 00:05:26,243
+Damn, it's a test!
+
+95
+00:05:27,202 --> 00:05:28,495
+It's hard to say for sure
+
+96
+00:05:28,578 --> 00:05:30,914
+but there might be another person
+out there with Kira's power.
+
+97
+00:05:31,248 --> 00:05:32,791
+With Kira's power?
+
+98
+00:05:32,999 --> 00:05:34,709
+But what do you mean by that, Light?
+
+99
+00:05:35,001 --> 00:05:36,586
+At the very least, I'd say this tape
+
+100
+00:05:36,670 --> 00:05:38,964
+was not created by the Kira
+we're familiar with.
+
+101
+00:05:39,506 --> 00:05:41,508
+It's extremely out of character for him
+
+102
+00:05:41,591 --> 00:05:43,802
+to use these kinds of victims
+for his killings.
+
+103
+00:05:44,427 --> 00:05:47,305
+And since we've established
+that he needs a name and face to kill,
+
+104
+00:05:47,389 --> 00:05:49,683
+it makes you wonder how he was able
+to kill that detective
+
+105
+00:05:49,766 --> 00:05:53,061
+and those two officers right outside
+the television station like that.
+
+106
+00:05:53,979 --> 00:05:55,605
+It's the same.
+
+107
+00:05:55,772 --> 00:05:59,359
+That's almost exactly how L...
+I mean, Ryuzaki said it.
+
+108
+00:05:59,776 --> 00:06:01,486
+That was incredible, Light.
+
+109
+00:06:01,611 --> 00:06:04,114
+Now, any doubts about you
+should be resolved.
+
+110
+00:06:05,115 --> 00:06:07,075
+I think you're exactly right about that.
+
+111
+00:06:07,492 --> 00:06:10,370
+We also believe that this is the work
+of a second Kira.
+
+112
+00:06:10,704 --> 00:06:11,788
+[Light] I knew it.
+
+113
+00:06:12,497 --> 00:06:15,834
+So you knew about this all along, Ryuga...
+Sorry, Ryuzaki?
+
+114
+00:06:16,376 --> 00:06:18,712
+Which means this was
+just another one of your tests?
+
+115
+00:06:18,837 --> 00:06:20,672
+It wasn't my intention to test you.
+
+116
+00:06:21,006 --> 00:06:24,175
+The truth is, if I was the only one
+who thought there was a second Kira,
+
+117
+00:06:24,259 --> 00:06:25,552
+it wouldn't be too convincing.
+
+118
+00:06:26,094 --> 00:06:28,430
+But the fact that we both came
+to the same conclusion
+
+119
+00:06:28,513 --> 00:06:30,515
+makes the theory
+that much more believable.
+
+120
+00:06:30,974 --> 00:06:33,143
+As expected, you did not disappoint us.
+
+121
+00:06:33,518 --> 00:06:34,728
+You've been a great help.
+
+122
+00:06:35,645 --> 00:06:36,730
+It's decided then.
+
+123
+00:06:37,480 --> 00:06:40,191
+First, we must focus on stopping
+this copycat.
+
+124
+00:06:40,525 --> 00:06:43,320
+From what we've seen,
+he sympathizes with the real Kira
+
+125
+00:06:43,403 --> 00:06:45,196
+but clearly lacks his sophistication.
+
+126
+00:06:45,655 --> 00:06:48,366
+I think he might even be willing
+to obey the original.
+
+127
+00:06:49,159 --> 00:06:51,494
+[L] If so, we could lure him into a trap
+
+128
+00:06:51,661 --> 00:06:54,205
+by sending our own message
+from the real Kira.
+
+129
+00:06:55,081 --> 00:06:56,708
+I guess I shouldn't be surprised.
+
+130
+00:06:56,833 --> 00:06:59,210
+You literally took the words
+right out of my mouth.
+
+131
+00:07:00,503 --> 00:07:01,963
+[L] Oh, and Light...
+
+132
+00:07:02,672 --> 00:07:04,925
+I would like you to play the part
+of the real Kira.
+
+133
+00:07:05,342 --> 00:07:07,469
+Huh? Me as Kira?
+
+134
+00:07:07,761 --> 00:07:09,930
+[L] Yes, you're the only one
+I can think of
+
+135
+00:07:10,013 --> 00:07:11,806
+who'd be able
+to pull something like this off.
+
+136
+00:07:12,223 --> 00:07:14,392
+At any rate, we don't have time to waste.
+
+137
+00:07:14,517 --> 00:07:16,811
+Do you think you could script
+a message from Kira
+
+138
+00:07:16,937 --> 00:07:19,689
+in time for it to be aired
+on this evening's national news?
+
+139
+00:07:19,814 --> 00:07:21,232
+[Ryuk chuckles]
+
+140
+00:07:21,358 --> 00:07:22,275
+[Light] Damn him.
+
+141
+00:07:22,651 --> 00:07:24,694
+He must have been planning this
+from the beginning.
+
+142
+00:07:24,778 --> 00:07:26,488
+It's the only reason I'm here.
+
+143
+00:07:28,073 --> 00:07:30,116
+[Light] Ryuzaki, does this look okay?
+
+144
+00:07:30,784 --> 00:07:32,535
+I think I managed to make it believable.
+
+145
+00:07:34,746 --> 00:07:36,790
+I think you've done
+an excellent job with this.
+
+146
+00:07:37,248 --> 00:07:40,502
+However, if we don't omit the part
+that says, "You're free to kill L,"
+
+147
+00:07:40,752 --> 00:07:41,962
+then I'm gonna end up dead.
+
+148
+00:07:42,212 --> 00:07:43,463
+[chuckles]
+
+149
+00:07:43,964 --> 00:07:46,967
+Uh, sorry. I guess I got carried away
+playing the part.
+
+150
+00:07:47,133 --> 00:07:50,261
+I figured if I was him,
+I'd probably demand that you be killed.
+
+151
+00:07:50,887 --> 00:07:52,347
+I was improvising.
+
+152
+00:07:52,639 --> 00:07:54,683
+Feel free to change it
+to whatever you like.
+
+153
+00:07:54,808 --> 00:07:55,684
+Sounds good.
+
+154
+00:07:57,435 --> 00:08:00,063
+[L] Okay, Aihara, the script is ready.
+I'll leave it to you.
+
+155
+00:08:00,313 --> 00:08:01,356
+[Aihara] All right.
+
+156
+00:08:02,273 --> 00:08:04,109
+And now, a shocking announcement.
+
+157
+00:08:04,484 --> 00:08:08,863
+In response to the frightening Kira video
+aired on Sakura TV only a few days ago,
+
+158
+00:08:08,947 --> 00:08:12,325
+an anonymous individual has contacted us
+claiming to be the real Kira.
+
+159
+00:08:13,576 --> 00:08:17,038
+In short, he has demanded of this network,
+as well as several others,
+
+160
+00:08:17,122 --> 00:08:19,666
+that we air the message
+you are now about to see.
+
+161
+00:08:20,083 --> 00:08:22,127
+I would also like to mention that the NPA
+
+162
+00:08:22,210 --> 00:08:24,129
+has granted us permission
+to air this video.
+
+163
+00:08:24,462 --> 00:08:27,340
+Is this the real Kira?
+No one knows for sure.
+
+164
+00:08:27,841 --> 00:08:30,010
+But we can only hope this video
+will provide us
+
+165
+00:08:30,093 --> 00:08:31,636
+with some much-needed answers.
+
+166
+00:08:32,846 --> 00:08:33,930
+[distorted voice] I am Kira.
+
+167
+00:08:34,305 --> 00:08:37,350
+It worked! I knew he'd answer me.
+
+168
+00:08:37,434 --> 00:08:38,935
+[distorted voice] The true Kira.
+
+169
+00:08:39,352 --> 00:08:43,398
+The one who was broadcast on Sakura TV
+several days ago is a pretender.
+
+170
+00:08:43,565 --> 00:08:44,607
+A fake.
+
+171
+00:08:44,733 --> 00:08:49,320
+The purpose of this message is
+to communicate my will to this impostor
+
+172
+00:08:49,529 --> 00:08:52,073
+I have chosen to be lenient with him
+for the time being,
+
+173
+00:08:52,157 --> 00:08:54,659
+only because I believe he wishes
+to cooperate with me
+
+174
+00:08:54,868 --> 00:08:56,870
+in the creation of a new world.
+
+175
+00:08:57,037 --> 00:08:59,164
+But I want to make it absolutely clear
+
+176
+00:08:59,247 --> 00:09:02,167
+that the taking of innocent lives
+is against my will.
+
+177
+00:09:02,459 --> 00:09:05,628
+If this person claiming to be me
+is truly sympathetic to my cause
+
+178
+00:09:05,712 --> 00:09:08,548
+and wishes to be of some help,
+I ask two things of him:
+
+179
+00:09:08,631 --> 00:09:10,675
+That he refrain from killing aimlessly
+
+180
+00:09:10,759 --> 00:09:12,886
+and that he agree to abide
+by my basic principles.
+
+181
+00:09:13,178 --> 00:09:15,930
+[Misa] Yay! Now where is that camcorder?
+
+182
+00:09:16,681 --> 00:09:18,391
+What are you planning to do?
+
+183
+00:09:18,475 --> 00:09:20,185
+[Misa] Uh, hello!
+Do you really need to ask?
+
+184
+00:09:20,268 --> 00:09:22,145
+I'm going to reply to him, of course.
+
+185
+00:09:22,645 --> 00:09:24,230
+SEVERAL DAYS LATER
+
+186
+00:09:24,314 --> 00:09:26,399
+[Watari] Ryuzaki, we have a reply
+from the second Kira.
+
+187
+00:09:26,649 --> 00:09:28,401
+-What?
+-Really?
+
+188
+00:09:28,693 --> 00:09:31,821
+I'll be bringing over the envelope
+and tape that we received,
+
+189
+00:09:31,946 --> 00:09:35,867
+but in the meantime, I'm streaming a copy
+of the video so you can view on your end.
+
+190
+00:09:38,787 --> 00:09:40,789
+[Second Kira]
+Kira, thank you for your reply.
+
+191
+00:09:40,872 --> 00:09:41,956
+Please do not worry.
+
+192
+00:09:42,040 --> 00:09:44,042
+I will follow orders and do as you say.
+
+193
+00:09:44,584 --> 00:09:46,086
+-Wow!
+-It worked!
+
+194
+00:09:46,503 --> 00:09:48,630
+[Light] "I will do as you say," huh?
+
+195
+00:09:48,797 --> 00:09:50,757
+This guy's gonna be no help at all.
+
+196
+00:09:51,007 --> 00:09:53,676
+If this fake had any idea
+what my wishes were,
+
+197
+00:09:53,760 --> 00:09:56,971
+he'd insist that L appear on TV
+and then kill him anyway.
+
+198
+00:09:57,388 --> 00:09:59,432
+How could you fall
+for something like this?
+
+199
+00:10:00,100 --> 00:10:01,101
+Damn it!
+
+200
+00:10:02,143 --> 00:10:03,895
+[Second Kira] I really want to meet you.
+
+201
+00:10:05,271 --> 00:10:07,357
+-I don't think you have the eyes.
+-[Light gasps]
+
+202
+00:10:07,482 --> 00:10:10,151
+[Second Kira] You don't have to worry.
+I would never try to kill you.
+
+203
+00:10:10,652 --> 00:10:11,861
+That's a promise.
+
+204
+00:10:12,320 --> 00:10:14,114
+[Light] What the hell is he thinking?
+
+205
+00:10:14,197 --> 00:10:17,492
+Talking about Shinigami eyes
+in a public message like this?
+
+206
+00:10:18,576 --> 00:10:20,954
+What's this "having the eyes"
+supposed to mean?
+
+207
+00:10:21,079 --> 00:10:22,622
+-Is it a code?
+-[L] Yeah.
+
+208
+00:10:23,414 --> 00:10:25,458
+[Second Kira]
+Please tell me how I can meet you
+
+209
+00:10:25,542 --> 00:10:26,626
+without the police knowing.
+
+210
+00:10:26,709 --> 00:10:27,710
+You'll think of something.
+
+211
+00:10:28,086 --> 00:10:30,380
+And when we meet,
+we can confirm our identities
+
+212
+00:10:30,463 --> 00:10:32,465
+by showing our Shinigami to each other.
+
+213
+00:10:32,632 --> 00:10:34,342
+-[L gasps]
+-Shinigami?
+
+214
+00:10:34,634 --> 00:10:35,885
+[Light] He's a liability.
+
+215
+00:10:35,969 --> 00:10:37,804
+If I don't do something
+about him quickly...
+
+216
+00:10:38,054 --> 00:10:39,806
+-[L screams]
+-What?
+
+217
+00:10:40,140 --> 00:10:44,602
+[L continues screaming and panting]
+
+218
+00:10:44,811 --> 00:10:45,979
+[groans]
+
+219
+00:10:46,187 --> 00:10:47,188
+Ryuzaki!
+
+220
+00:10:48,189 --> 00:10:50,024
+-Are you all right?
+-Shh...
+
+221
+00:10:50,900 --> 00:10:52,360
+Shinigami?
+
+222
+00:10:53,695 --> 00:10:55,363
+Am I supposed to believe that?
+
+223
+00:10:55,488 --> 00:10:57,532
+That Shinigami actually exist?
+
+224
+00:11:16,676 --> 00:11:18,428
+Shi-- Shinigami?
+
+225
+00:11:19,721 --> 00:11:21,306
+Am I supposed to believe that?
+
+226
+00:11:21,931 --> 00:11:24,309
+That Shinigami actually exist?
+
+227
+00:11:24,684 --> 00:11:25,977
+That's impossible...
+
+228
+00:11:26,477 --> 00:11:28,062
+Obviously they don't exist.
+
+229
+00:11:28,646 --> 00:11:30,064
+Yes, that's right, Ryuzaki.
+
+230
+00:11:30,190 --> 00:11:32,817
+Listen to yourself.
+Of course Shinigami don't exist.
+
+231
+00:11:33,193 --> 00:11:34,611
+[nervous groan]
+
+232
+00:11:35,361 --> 00:11:37,864
+You're probably right,
+but I remember that Kira
+
+233
+00:11:37,947 --> 00:11:41,284
+had those prisoners write something
+suggesting the existence of Shinigami.
+
+234
+00:11:41,784 --> 00:11:43,286
+So, based on that fact,
+
+235
+00:11:43,578 --> 00:11:46,122
+perhaps we're dealing
+with the same person after all.
+
+236
+00:11:46,372 --> 00:11:49,083
+That would definitely explain
+why we're hearing the same words.
+
+237
+00:11:49,209 --> 00:11:50,877
+I don't think so, because...
+
+238
+00:11:51,252 --> 00:11:52,879
+if this was the same person,
+
+239
+00:11:53,171 --> 00:11:56,758
+it's highly unlikely he would have
+responded to our video in the first place.
+
+240
+00:11:57,133 --> 00:11:59,010
+[Light] And why would he agree
+to let L live
+
+241
+00:11:59,093 --> 00:12:01,971
+after going to all the trouble
+of getting him to appear on TV?
+
+242
+00:12:02,096 --> 00:12:05,058
+The real Kira wants him dead,
+so it doesn't make sense.
+
+243
+00:12:05,183 --> 00:12:07,060
+[Aizawa] Then maybe
+there's some other connection
+
+244
+00:12:07,143 --> 00:12:08,895
+between the real one and this new guy.
+
+245
+00:12:09,020 --> 00:12:11,481
+They could've already met
+and decided to use the word "Shinigami"
+
+246
+00:12:11,564 --> 00:12:12,774
+as a way to confuse us.
+
+247
+00:12:12,899 --> 00:12:14,525
+[L] No, I'd say that's unlikely.
+
+248
+00:12:14,609 --> 00:12:15,485
+Hmm?
+
+249
+00:12:15,777 --> 00:12:16,945
+[L] It's as Light says.
+
+250
+00:12:17,028 --> 00:12:18,613
+If the two Kiras were connected,
+
+251
+00:12:18,696 --> 00:12:20,573
+I don't think the impostor
+would be so willing
+
+252
+00:12:20,657 --> 00:12:22,325
+to give up on his plan to kill me.
+
+253
+00:12:23,076 --> 00:12:26,329
+All of this suggests to me
+that the copycat has his own agenda
+
+254
+00:12:26,412 --> 00:12:28,414
+and is acting independently of the first.
+
+255
+00:12:29,332 --> 00:12:32,293
+I believe his actual motivation
+is to meet the original.
+
+256
+00:12:32,710 --> 00:12:34,003
+I think you're right.
+
+257
+00:12:34,337 --> 00:12:36,464
+He's acting out of an interest in Kira.
+
+258
+00:12:37,423 --> 00:12:41,469
+The word "Shinigami" could very well be
+some reference to their killing power.
+
+259
+00:12:42,262 --> 00:12:46,057
+Saying we can confirm our identities
+by showing our "Shinigami" to each other
+
+260
+00:12:46,140 --> 00:12:48,393
+probably means that they can confirm
+their identities
+
+261
+00:12:48,476 --> 00:12:51,020
+by somehow demonstrating
+their ability to kill.
+
+262
+00:12:51,646 --> 00:12:52,939
+Yes, that's it.
+
+263
+00:12:53,731 --> 00:12:55,024
+[L] Based on their messages,
+
+264
+00:12:55,108 --> 00:12:58,444
+we can assume that the word "Shinigami"
+must hold some other meaning
+
+265
+00:12:58,528 --> 00:13:01,781
+that only the real Kira
+and the second Kira are aware of.
+
+266
+00:13:02,282 --> 00:13:05,660
+Now, we just need to convince this copycat
+to tell us what that is.
+
+267
+00:13:06,744 --> 00:13:09,372
+[Light] So, will you respond
+and force him to be more specific?
+
+268
+00:13:09,455 --> 00:13:11,207
+We have to be careful how we handle this.
+
+269
+00:13:11,332 --> 00:13:13,334
+We can't make it too obvious
+that we're asking.
+
+270
+00:13:13,418 --> 00:13:15,795
+Otherwise, he'll realize we're not Kira.
+
+271
+00:13:16,379 --> 00:13:20,633
+[L] No, from now on, it's best
+that we leave it up to the two Kiras.
+
+272
+00:13:20,758 --> 00:13:22,468
+-Huh?
+-What do you mean?
+
+273
+00:13:22,719 --> 00:13:24,637
+[L] I imagine that the second Kira
+
+274
+00:13:24,721 --> 00:13:27,348
+is probably quite satisfied
+with the current situation,
+
+275
+00:13:27,432 --> 00:13:29,726
+now that he's received
+a televised response.
+
+276
+00:13:30,435 --> 00:13:32,895
+He sent a message to get Kira's attention,
+
+277
+00:13:33,021 --> 00:13:35,023
+and as far as he knows, he now has it.
+
+278
+00:13:35,398 --> 00:13:37,400
+Also, there's that word he used,
+
+279
+00:13:37,483 --> 00:13:40,236
+one that only the two of them
+would understand.
+
+280
+00:13:40,403 --> 00:13:42,864
+We'll arrange to have this reply
+broadcast today
+
+281
+00:13:42,947 --> 00:13:44,574
+on Sakura's six o'clock news.
+
+282
+00:13:44,657 --> 00:13:46,909
+Naturally, this will be
+of interest to Kira,
+
+283
+00:13:47,035 --> 00:13:49,746
+and he'll be following this exchange
+between the copycat
+
+284
+00:13:49,829 --> 00:13:51,122
+and the one we have invented.
+
+285
+00:13:51,789 --> 00:13:54,792
+Now, if I were Kira himself,
+my priority would be
+
+286
+00:13:54,876 --> 00:13:58,171
+to prevent this impostor from coming
+into contact with the police.
+
+287
+00:13:58,504 --> 00:14:02,258
+This is good for us, because it means
+that the real Kira may feel pressured
+
+288
+00:14:02,342 --> 00:14:03,760
+to respond this time.
+
+289
+00:14:04,302 --> 00:14:06,346
+Okay. But let's say
+that he doesn't respond.
+
+290
+00:14:06,429 --> 00:14:07,347
+Then what do we do?
+
+291
+00:14:07,722 --> 00:14:10,892
+[L] Yes, I've been thinking
+about what the second Kira might do
+
+292
+00:14:10,975 --> 00:14:12,435
+if he gets no response.
+
+293
+00:14:12,894 --> 00:14:17,023
+For one, he might reveal more information
+that he knows Kira wants kept secret.
+
+294
+00:14:17,231 --> 00:14:18,775
+To pressure him into a meeting.
+
+295
+00:14:18,858 --> 00:14:21,235
+Of course, that would make Kira nervous.
+
+296
+00:14:21,819 --> 00:14:23,696
+It could be interesting.
+
+297
+00:14:24,113 --> 00:14:25,448
+And what would be more interesting
+
+298
+00:14:25,865 --> 00:14:29,202
+is if Kira sends a message of his own
+to prevent this from happening.
+
+299
+00:14:29,702 --> 00:14:31,287
+Ideally, this could provide us
+
+300
+00:14:31,371 --> 00:14:34,082
+with the physical evidence we'll need
+to build a case against him.
+
+301
+00:14:34,916 --> 00:14:37,627
+[L] In the meantime,
+let's gather all the information we can
+
+302
+00:14:37,710 --> 00:14:38,961
+on this copycat.
+
+303
+00:14:40,380 --> 00:14:42,256
+[camera clicking]
+
+304
+00:14:43,883 --> 00:14:45,134
+[photographer] Oh, that's good.
+
+305
+00:14:45,426 --> 00:14:47,178
+Yes! Beautiful.
+
+306
+00:14:47,512 --> 00:14:49,097
+Just like that. Perfect!
+
+307
+00:14:49,597 --> 00:14:51,849
+I'm telling you,
+these are gonna knock 'em dead.
+
+308
+00:14:52,475 --> 00:14:54,977
+-You look like a little angel, Misa.
+-[giggles]
+
+309
+00:14:55,228 --> 00:14:57,021
+[Misa sighs] Oh, I'm so tired.
+
+310
+00:14:57,271 --> 00:14:58,856
+That shoot went on forever.
+
+311
+00:14:58,940 --> 00:15:00,983
+Modeling takes a lot of energy.
+
+312
+00:15:02,276 --> 00:15:03,403
+[Misa] Hey, Rem.
+
+313
+00:15:03,569 --> 00:15:04,445
+Huh?
+
+314
+00:15:04,612 --> 00:15:06,239
+Can I ask you something?
+
+315
+00:15:06,531 --> 00:15:07,490
+What is it?
+
+316
+00:15:07,990 --> 00:15:11,035
+Each Shinigami has to have
+one Death Note of their own.
+
+317
+00:15:11,202 --> 00:15:14,997
+For a Shinigami to give a notebook
+to a human, he needs to have two.
+
+318
+00:15:15,415 --> 00:15:19,335
+Ryuk could give a Death Note to Kira,
+because he somehow found a way
+
+319
+00:15:19,419 --> 00:15:21,754
+to sneak an extra one
+passed the Shinigami King.
+
+320
+00:15:22,338 --> 00:15:23,297
+Right.
+
+321
+00:15:23,714 --> 00:15:24,924
+What about you?
+
+322
+00:15:25,216 --> 00:15:28,344
+The Shinigami King isn't someone
+who is easily fooled.
+
+323
+00:15:28,511 --> 00:15:29,929
+It doesn't happen often.
+
+324
+00:15:30,096 --> 00:15:31,722
+Oh! Then how did I get mine?
+
+325
+00:15:32,557 --> 00:15:34,767
+Let's just say it has
+a lot to do with the fact
+
+326
+00:15:34,851 --> 00:15:37,270
+that I'm one of the few
+in the Shinigami Realm
+
+327
+00:15:37,353 --> 00:15:39,564
+who knows how to kill another of my kind.
+
+328
+00:15:40,440 --> 00:15:42,108
+That's how I ended up with two.
+
+329
+00:15:42,567 --> 00:15:44,569
+Oh, I think I get it.
+
+330
+00:15:44,861 --> 00:15:48,239
+You killed a Shinigami and then
+you gave his notebook to me, right?
+
+331
+00:15:48,656 --> 00:15:49,866
+It's not like that.
+
+332
+00:15:50,074 --> 00:15:51,826
+I wasn't the one who killed him.
+
+333
+00:15:52,118 --> 00:15:54,328
+I just happened to be around when he died.
+
+334
+00:15:54,662 --> 00:15:56,497
+It was coincidence, really.
+
+335
+00:15:57,373 --> 00:16:00,376
+So, how do you kill a Shinigami?
+I have to know.
+
+336
+00:16:01,461 --> 00:16:03,880
+-Well?
+-Never repeat this to anyone.
+
+337
+00:16:05,173 --> 00:16:07,884
+I learned the only way
+to kill a Shinigami...
+
+338
+00:16:09,218 --> 00:16:11,888
+is to make them fall in love
+with a human.
+
+339
+00:16:15,308 --> 00:16:17,393
+What a beautiful way to kill.
+
+340
+00:16:22,773 --> 00:16:23,691
+[bones creaking]
+
+341
+00:16:25,359 --> 00:16:28,070
+[Rem] There once was
+a Shinigami named Gelus,
+
+342
+00:16:28,196 --> 00:16:31,991
+who spent all of his time
+watching over a certain human girl.
+
+343
+00:16:32,533 --> 00:16:35,244
+Gelus wanted nothing more
+than to look at her
+
+344
+00:16:35,369 --> 00:16:37,538
+as she went about her daily life.
+
+345
+00:16:48,299 --> 00:16:49,842
+[Rem] It's today, isn't it?
+
+346
+00:16:49,967 --> 00:16:51,344
+Her last day alive?
+
+347
+00:16:52,220 --> 00:16:54,555
+[Gelus] She looks so full of life.
+
+348
+00:16:55,473 --> 00:16:56,891
+I wonder, why today?
+
+349
+00:16:57,558 --> 00:16:58,559
+It's...
+
+350
+00:16:58,726 --> 00:17:00,978
+[sniffs] It's just not fair.
+
+351
+00:17:06,234 --> 00:17:09,487
+[Rem] I also wanted to find out
+how she was going to die,
+
+352
+00:17:09,737 --> 00:17:11,656
+so I stayed and watched with him.
+
+353
+00:17:15,409 --> 00:17:17,954
+It was nighttime
+and she was walking alone.
+
+354
+00:17:18,079 --> 00:17:19,580
+No one else was around.
+
+355
+00:17:20,081 --> 00:17:21,541
+And then it happened.
+
+356
+00:17:25,878 --> 00:17:28,589
+A man suddenly appeared
+and blocked her path.
+
+357
+00:17:28,798 --> 00:17:31,425
+He was clearly infatuated with the girl.
+
+358
+00:17:31,634 --> 00:17:33,469
+I love you more than anyone else
+in the world!
+
+359
+00:17:33,719 --> 00:17:36,180
+I'm always watching you!
+I want to protect you forever!
+
+360
+00:17:36,347 --> 00:17:38,307
+[Rem] She'd never seen the man before,
+
+361
+00:17:38,432 --> 00:17:40,601
+and, of course, turned him down.
+
+362
+00:17:40,893 --> 00:17:41,978
+[laughing manically]
+
+363
+00:17:43,020 --> 00:17:45,815
+[sobbing]
+
+364
+00:17:46,232 --> 00:17:49,485
+Then, if I can't have you...
+
+365
+00:17:50,653 --> 00:17:52,363
+I'll kill us both!
+
+366
+00:17:52,697 --> 00:17:56,409
+[screaming]
+
+367
+00:17:57,535 --> 00:17:58,703
+Wait. Stop it!
+
+368
+00:17:58,911 --> 00:18:00,204
+What are you doing?
+
+369
+00:18:00,496 --> 00:18:02,373
+[Gelus sobbing]
+
+370
+00:18:02,748 --> 00:18:07,128
+Without even thinking, Gelus did something
+that we Shinigami must never do.
+
+371
+00:18:07,587 --> 00:18:12,675
+[man screaming and gasping for air]
+
+372
+00:18:12,925 --> 00:18:14,885
+[choking]
+
+373
+00:18:22,727 --> 00:18:25,980
+[Rem] Gelus used his Death Note
+to kill the man instantly,
+
+374
+00:18:26,105 --> 00:18:28,190
+and, therefore, saved the girl's life.
+
+375
+00:18:28,691 --> 00:18:30,568
+It was the wrong thing to do.
+
+376
+00:18:30,901 --> 00:18:34,572
+Shinigami exist only to shorten
+and take human lives.
+
+377
+00:18:35,197 --> 00:18:38,868
+We aren't permitted to undo
+that which has been fated.
+
+378
+00:18:39,702 --> 00:18:46,584
+[Gelus sobbing and groaning]
+
+379
+00:18:50,713 --> 00:18:52,298
+[exhales]
+
+380
+00:18:55,593 --> 00:18:56,677
+At that moment,
+
+381
+00:18:56,761 --> 00:19:00,097
+Gelus became something
+which was neither sand nor rust
+
+382
+00:19:00,181 --> 00:19:01,974
+and disappeared forever.
+
+383
+00:19:02,475 --> 00:19:03,392
+He died.
+
+384
+00:19:04,060 --> 00:19:08,689
+The only reminder of his existence
+was his Death Note left behind.
+
+385
+00:19:11,359 --> 00:19:14,070
+The rest of his lifespan
+was added to hers.
+
+386
+00:19:14,403 --> 00:19:16,739
+So, not only had he saved her life,
+
+387
+00:19:16,864 --> 00:19:20,451
+he'd accidentally extended it
+well beyond its natural end.
+
+388
+00:19:21,952 --> 00:19:24,330
+So, if he'd never fallen in love
+with this girl,
+
+389
+00:19:24,413 --> 00:19:26,874
+he'd probably still be alive today,
+wouldn't he?
+
+390
+00:19:27,291 --> 00:19:28,334
+That's right.
+
+391
+00:19:29,710 --> 00:19:30,586
+Hmm...
+
+392
+00:19:32,254 --> 00:19:33,631
+[Misa] I had no idea.
+
+393
+00:19:34,215 --> 00:19:35,841
+All this time, I thought it was luck.
+
+394
+00:19:35,966 --> 00:19:38,719
+But it was a Shinigami
+who saved my life that day.
+
+395
+00:19:39,845 --> 00:19:40,721
+Yes.
+
+396
+00:19:41,514 --> 00:19:43,933
+Gelus loved you enough to die for you.
+
+397
+00:19:44,767 --> 00:19:47,895
+So that Death Note is now yours to keep.
+
+398
+00:19:49,605 --> 00:19:50,481
+Hmm.
+
+399
+00:19:54,402 --> 00:19:55,403
+I see.
+
+400
+00:19:55,569 --> 00:19:58,447
+For a Shinigami to die,
+they have to love a human enough
+
+401
+00:19:58,531 --> 00:20:00,533
+that they'd prevent their death
+from happening.
+
+402
+00:20:00,908 --> 00:20:02,076
+So, what about you, Rem?
+
+403
+00:20:02,284 --> 00:20:04,620
+You're not in love with me, are you?
+Be honest.
+
+404
+00:20:04,912 --> 00:20:06,038
+Just forget it.
+
+405
+00:20:06,372 --> 00:20:08,791
+You really think
+you can kill me that easily?
+
+406
+00:20:09,291 --> 00:20:11,168
+Oops. You saw through that?
+
+407
+00:20:11,502 --> 00:20:12,378
+[giggles]
+
+408
+00:20:13,295 --> 00:20:14,463
+I'm so glad.
+
+409
+00:20:14,547 --> 00:20:17,383
+At least now I have something interesting
+to tell Kira.
+
+410
+00:20:17,883 --> 00:20:18,968
+But I wonder...
+
+411
+00:20:19,260 --> 00:20:24,056
+Does he know how to K-I-L-L a Shinigami?
+
+412
+00:20:24,515 --> 00:20:27,518
+I asked him on TV to find a way
+for us to meet each other,
+
+413
+00:20:27,601 --> 00:20:29,103
+but he hasn't replied to me yet.
+
+414
+00:20:29,395 --> 00:20:31,188
+What's taking him so long?
+
+415
+00:20:31,480 --> 00:20:33,524
+Maybe I should just send him
+another message.
+
+416
+00:20:37,820 --> 00:20:38,863
+[Light] This isn't good.
+
+417
+00:20:38,988 --> 00:20:42,575
+I can't allow this Second Kira
+to act on his own for much longer.
+
+418
+00:20:42,742 --> 00:20:45,619
+He's careless, so it's only
+a matter of time before he slips up.
+
+419
+00:20:45,703 --> 00:20:47,830
+And when he does,
+the police will be waiting.
+
+420
+00:20:47,997 --> 00:20:51,083
+With him in custody, they could find out
+about the Death Note.
+
+421
+00:20:53,878 --> 00:20:55,004
+[waiter] Something to start?
+
+422
+00:20:55,296 --> 00:20:57,923
+[Misa] Hmm, a strawberry sundae, please.
+
+423
+00:20:58,340 --> 00:20:59,717
+Of course. Be right back.
+
+424
+00:21:01,260 --> 00:21:02,928
+[sighs] What should I do?
+
+425
+00:21:03,220 --> 00:21:06,807
+How can I contact the Second Kira
+without L noticing anything?
+
+426
+00:21:08,184 --> 00:21:10,436
+-Here you go. Enjoy.
+-Mmm!
+
+427
+00:21:14,231 --> 00:21:16,358
+I can't wait to meet Kira!
+
+428
+00:21:17,067 --> 00:21:18,277
+I wonder...
+
+429
+00:21:18,402 --> 00:21:21,155
+What kind of person are you, impostor?
+
+430
+00:21:21,989 --> 00:21:22,907
+I wonder...
+
+431
+00:21:22,990 --> 00:21:25,201
+What kind of person are you, Kira?
+
+432
+00:21:25,326 --> 00:21:26,368
+Mmm. [giggles]
+
+433
+00:21:30,456 --> 00:21:36,462
+TO BE CONTINUED
+
+434
+00:21:41,801 --> 00:21:43,594
+[theme music playing]
