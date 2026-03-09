@@ -1,10 +1,10 @@
 use logos::{Lexer, Logos};
 
-use crate::error::*;
+use crate::{error::*, types::Millisecond};
 
 pub use types::{
-  Align, Block, Cue, CueId, CueSettings, Header, Hour, Line, LineAlign, LineValue, Position,
-  PositionAlign, RegionId, Size, Timestamp, Vertical,
+  Align, Block, Cue, CueId, CueOptions, Header, Hour, Line, LineAlign, LineValue, Percentage,
+  Position, PositionAlign, RegionId, Size, Timestamp, Vertical,
 };
 
 mod types;
@@ -69,69 +69,23 @@ enum Token {
   /// Hours accept 1+ digits per the W3C spec.
   /// Whitespace around `-->` includes space, tab, and form feed (U+000C).
   #[regex(
-    r"[0-9]+:[0-5][0-9]:[0-5][0-9]\.[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-9]+:[0-5][0-9]:[0-5][0-9]\.[0-9]{3}",
-    parse_timing_long_long,
-    priority = 4,
-  )]
-  #[regex(
-    r"[0-5][0-9]:[0-5][0-9]\.[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-9]+:[0-5][0-9]:[0-5][0-9]\.[0-9]{3}",
-    parse_timing_short_long,
-    priority = 3
-  )]
-  #[regex(
-    r"[0-9]+:[0-5][0-9]:[0-5][0-9]\.[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-5][0-9]:[0-5][0-9]\.[0-9]{3}",
-    parse_timing_long_short,
-    priority = 3
-  )]
-  #[regex(
-    r"[0-5][0-9]:[0-5][0-9]\.[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-5][0-9]:[0-5][0-9]\.[0-9]{3}",
-    parse_timing_short_short,
-    priority = 2
+    r"(?:[0-9]+:)?[0-5][0-9]:[0-5][0-9]\.[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+(?:[0-9]+:)?[0-5][0-9]:[0-5][0-9]\.[0-9]{3}",
+    parse_timing,
   )]
   TimingLine((Timestamp, Timestamp)),
 }
 
-fn parse_timing_long_long(
-  lex: &mut Lexer<'_, Token>,
-) -> Result<(Timestamp, Timestamp), ParseVttError> {
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn parse_timing(lex: &mut Lexer<'_, Token>) -> Result<(Timestamp, Timestamp), ParseVttError> {
   let s = lex.slice();
   let (start_str, end_str) = split_arrow(s)?;
-  let start = parse_timestamp_long(start_str)?;
-  let end = parse_timestamp_long(end_str)?;
-  Ok((start, end))
-}
-
-fn parse_timing_short_long(
-  lex: &mut Lexer<'_, Token>,
-) -> Result<(Timestamp, Timestamp), ParseVttError> {
-  let s = lex.slice();
-  let (start_str, end_str) = split_arrow(s)?;
-  let start = parse_timestamp_short(start_str)?;
-  let end = parse_timestamp_long(end_str)?;
-  Ok((start, end))
-}
-
-fn parse_timing_long_short(
-  lex: &mut Lexer<'_, Token>,
-) -> Result<(Timestamp, Timestamp), ParseVttError> {
-  let s = lex.slice();
-  let (start_str, end_str) = split_arrow(s)?;
-  let start = parse_timestamp_long(start_str)?;
-  let end = parse_timestamp_short(end_str)?;
-  Ok((start, end))
-}
-
-fn parse_timing_short_short(
-  lex: &mut Lexer<'_, Token>,
-) -> Result<(Timestamp, Timestamp), ParseVttError> {
-  let s = lex.slice();
-  let (start_str, end_str) = split_arrow(s)?;
-  let start = parse_timestamp_short(start_str)?;
-  let end = parse_timestamp_short(end_str)?;
+  let start = parse_timestamp(start_str)?;
+  let end = parse_timestamp(end_str)?;
   Ok((start, end))
 }
 
 /// Split a timing line on `-->`, trimming whitespace around each part.
+#[cfg_attr(not(tarpaulin), inline(always))]
 fn split_arrow(s: &str) -> Result<(&str, &str), ParseVttError> {
   let arrow = s.find("-->").ok_or(ParseVttError::InvalidTimingLine)?;
   let start = s[..arrow].trim();
@@ -142,35 +96,42 @@ fn split_arrow(s: &str) -> Result<(&str, &str), ParseVttError> {
   Ok((start, end))
 }
 
-/// Parse a long-form timestamp `HH:MM:SS.mmm` (hours required).
-fn parse_timestamp_long(s: &str) -> Result<Timestamp, ParseVttError> {
-  let dot = s.rfind('.').unwrap();
-  let millis: crate::types::Millisecond = s[dot + 1..].parse()?;
-  let hms = &s[..dot];
-  let mut parts = hms.splitn(3, ':');
-  let h: u64 = parts
+/// Parse a timestamp in either long form `HH:MM:SS.mmm` or short form
+/// `MM:SS.mmm`. Auto-detects by counting `:` separators.
+#[inline]
+fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
+  let (time, ms) = s
+    .split_once('.')
+    .ok_or(ParseVttError::InvalidTimestamp("missing '.'"))?;
+  let millis: Millisecond = ms.parse()?;
+  let mut parts = time.splitn(3, ':');
+  let first = parts
     .next()
-    .unwrap()
-    .parse()
-    .map_err(|_| ParseVttError::InvalidTimestamp("hours value too large"))?;
-  let m: crate::types::Minute = parts.next().unwrap().parse()?;
-  let sec: crate::types::Second = parts.next().unwrap().parse()?;
-  Ok(Timestamp::from_hmsm(Hour::with(h), m, sec, millis))
-}
-
-/// Parse a short-form timestamp `MM:SS.mmm` (hours omitted, default to 0).
-fn parse_timestamp_short(s: &str) -> Result<Timestamp, ParseVttError> {
-  let dot = s.rfind('.').unwrap();
-  let millis: crate::types::Millisecond = s[dot + 1..].parse()?;
-  let ms = &s[..dot];
-  let mut parts = ms.splitn(2, ':');
-  let m: crate::types::Minute = parts.next().unwrap().parse()?;
-  let sec: crate::types::Second = parts.next().unwrap().parse()?;
-  Ok(Timestamp::from_hmsm(Hour::new(), m, sec, millis))
+    .ok_or(ParseVttError::InvalidTimestamp("empty timestamp"))?;
+  let second = parts.next().ok_or(ParseVttError::InvalidTimestamp(
+    "missing minutes or seconds",
+  ))?;
+  match parts.next() {
+    // Long form: HH:MM:SS
+    Some(sec_str) => Ok(Timestamp::from_hmsm(
+      first.parse()?,
+      second.parse()?,
+      sec_str.parse()?,
+      millis,
+    )),
+    // Short form: MM:SS
+    None => Ok(Timestamp::from_hmsm(
+      Hour::new(),
+      first.parse()?,
+      second.parse()?,
+      millis,
+    )),
+  }
 }
 
 /// Lex the next token from a line. Returns `Ok(None)` when the line
 /// produces no tokens.
+#[cfg_attr(not(tarpaulin), inline(always))]
 fn lex(line: &str) -> Result<Option<(Token, usize)>, ParseVttError> {
   let mut lexer = Token::lexer(line);
   match lexer.next() {
@@ -194,8 +155,8 @@ fn strip_leading(line: &str) -> &str {
 }
 
 /// Parse cue settings from the remainder of a timing line.
-fn parse_cue_settings(s: &str) -> CueSettings {
-  let mut settings = CueSettings::default();
+fn parse_cue_settings<'a>(s: &'a str) -> CueOptions<'a> {
+  let mut settings = CueOptions::default();
   if s.is_empty() {
     return settings;
   }
@@ -285,15 +246,7 @@ fn parse_cue_settings(s: &str) -> CueSettings {
         }
       },
       "region" => {
-        #[cfg(any(feature = "alloc", feature = "std"))]
-        {
-          settings.set_region(RegionId::from_string(value.into()));
-        }
-        #[cfg(not(any(feature = "alloc", feature = "std")))]
-        {
-          // Without alloc, we can't store region IDs from parsed input
-          let _ = value;
-        }
+        settings.set_region(RegionId::new(value));
       }
       _ => {
         // Unknown settings are ignored per the spec
@@ -304,25 +257,27 @@ fn parse_cue_settings(s: &str) -> CueSettings {
   settings
 }
 
-/// Parse a percentage value like "50%". Returns the number part.
-fn parse_percentage(s: &str) -> Option<u8> {
+/// Parse a percentage value like "50%".
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn parse_percentage(s: &str) -> Option<Percentage> {
   let s = s.strip_suffix('%')?;
   let n: u8 = s.parse().ok()?;
-  if n > 100 { None } else { Some(n) }
+  Percentage::try_with(n)
 }
 
 /// Parse a line value: either `N%` (percentage) or `N` (line number, possibly negative).
+#[cfg_attr(not(tarpaulin), inline(always))]
 fn parse_line_value(s: &str) -> Option<LineValue> {
   if let Some(pct) = parse_percentage(s) {
     Some(LineValue::Percentage(pct))
   } else {
-    s.parse::<i32>().ok().map(LineValue::Number)
+    s.parse().ok().map(LineValue::Number)
   }
 }
 
 /// Format cue settings to a string for writing.
 #[cfg(feature = "std")]
-fn format_cue_settings(settings: &CueSettings, buf: &mut std::vec::Vec<u8>) {
+fn format_cue_settings(settings: &CueOptions<'_>, buf: &mut std::vec::Vec<u8>) {
   use std::io::Write as _;
 
   if let Some(v) = settings.vertical() {
@@ -359,7 +314,7 @@ fn format_cue_settings(settings: &CueSettings, buf: &mut std::vec::Vec<u8>) {
 }
 
 /// State machine states for the WebVTT parser.
-enum State {
+enum State<'a> {
   /// Expecting the WEBVTT signature line.
   Signature,
   /// After signature, collecting optional header text until first blank line.
@@ -367,7 +322,7 @@ enum State {
   /// Expecting a block start (cue, NOTE, STYLE, REGION) or blank lines.
   BlockStart,
   /// Collecting cue body text.
-  CueBody(CueBodyState),
+  CueBody(CueBodyState<'a>),
   /// Collecting NOTE body text.
   NoteBody(usize, usize),
   /// Collecting STYLE body text.
@@ -378,15 +333,15 @@ enum State {
   Done,
 }
 
-struct CueBodyState {
-  header: Header,
+struct CueBodyState<'a> {
+  header: Header<'a>,
   start: usize,
   end: usize,
 }
 
-impl CueBodyState {
+impl<'a> CueBodyState<'a> {
   #[cfg_attr(not(tarpaulin), inline(always))]
-  const fn new(header: Header, start: usize, end: usize) -> Self {
+  const fn new(header: Header<'a>, start: usize, end: usize) -> Self {
     Self { header, start, end }
   }
 }
@@ -430,7 +385,7 @@ impl CueBodyState {
 pub struct Parser<'a> {
   input: &'a str,
   lines: Lines<'a>,
-  state: State,
+  state: State<'a>,
   /// Whether we've seen the first cue. STYLE/REGION blocks are only
   /// allowed before the first cue per the spec.
   seen_cue: bool,
@@ -477,7 +432,7 @@ impl<'a> Parser<'a> {
 
 /// Try to lex a timing line. On success, returns the parsed header and
 /// the byte offset within `self.input` where the body starts.
-fn try_parse_timing(line: &str, input: &str) -> Option<(Header, usize)> {
+fn try_parse_timing<'a>(line: &'a str, input: &'a str) -> Option<(Header<'a>, usize)> {
   let stripped = strip_leading(line);
   if !is_timing_line(stripped) {
     return None;
@@ -488,7 +443,7 @@ fn try_parse_timing(line: &str, input: &str) -> Option<(Header, usize)> {
       let mut header = Header::new(start, end);
       let settings_str = stripped[matched_end..].trim();
       let settings = parse_cue_settings(settings_str);
-      if settings != CueSettings::default() {
+      if settings != CueOptions::default() {
         header.set_settings(settings);
       }
       let offset = line.as_ptr() as usize - input.as_ptr() as usize + line.len();
@@ -499,7 +454,7 @@ fn try_parse_timing(line: &str, input: &str) -> Option<(Header, usize)> {
 }
 
 impl<'a> Iterator for Parser<'a> {
-  type Item = Result<Block<&'a str>, ParseVttError>;
+  type Item = Result<Block<'a, &'a str>, ParseVttError>;
 
   fn next(&mut self) -> Option<Self::Item> {
     loop {
@@ -619,14 +574,7 @@ impl<'a> Iterator for Parser<'a> {
 
           if is_timing_line(next_line) {
             if let Some((mut header, offset)) = try_parse_timing(next_line, self.input) {
-              #[cfg(any(feature = "alloc", feature = "std"))]
-              {
-                header.set_identifier(CueId::from_string(identifier_line.into()));
-              }
-              #[cfg(not(any(feature = "alloc", feature = "std")))]
-              {
-                let _ = identifier_line;
-              }
+              header.set_identifier(CueId::new(identifier_line));
 
               self.state = State::CueBody(CueBodyState::new(header, offset, offset));
               self.seen_cue = true;
@@ -644,7 +592,6 @@ impl<'a> Iterator for Parser<'a> {
             continue;
           }
         }
-
         State::CueBody(ref mut body) => {
           let CueBodyState { header, start, end } = body;
           let Some(line) = self.lines.next() else {
@@ -816,7 +763,7 @@ const _: () = {
     ///
     /// A blank line separator is emitted between blocks. The `WEBVTT`
     /// signature is automatically emitted before the first block.
-    pub fn write<T: AsRef<str>>(&mut self, block: &Block<T>) -> io::Result<()> {
+    pub fn write<T: AsRef<str>>(&mut self, block: &Block<'_, T>) -> io::Result<()> {
       if !self.has_written_signature {
         self.write_header(None)?;
       }
@@ -892,10 +839,11 @@ const _: () = {
     }
 
     /// Write all blocks from an iterator.
-    pub fn write_all<'a, T, I>(&mut self, blocks: I) -> io::Result<()>
+    pub fn write_all<'b, 'c, T, I>(&mut self, blocks: I) -> io::Result<()>
     where
-      T: AsRef<str> + 'a,
-      I: IntoIterator<Item = &'a Block<T>>,
+      T: AsRef<str> + 'b,
+      I: IntoIterator<Item = &'b Block<'c, T>>,
+      'c: 'b,
     {
       for block in blocks {
         self.write(block)?;

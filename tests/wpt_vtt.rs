@@ -6,15 +6,15 @@
 
 #![cfg(any(feature = "std", feature = "alloc"))]
 
-use fasrt::vtt::{Align, Block, Cue, Hour, ParseVttError, Parser, Size, Vertical};
+use fasrt::vtt::{Align, Block, Cue, Hour, ParseVttError, Parser, Percentage, Size, Vertical};
 
 /// Helper: collect all blocks (ignoring errors after signature).
-fn collect(input: &str) -> Result<Vec<Block<&str>>, ParseVttError> {
+fn collect<'a>(input: &'a str) -> Result<Vec<Block<'a, &'a str>>, ParseVttError> {
   Parser::new(input).collect()
 }
 
 /// Helper: collect only cues.
-fn collect_cues(input: &str) -> Result<Vec<Cue<&str>>, ParseVttError> {
+fn collect_cues<'a>(input: &'a str) -> Result<Vec<Cue<'a, &'a str>>, ParseVttError> {
   let blocks = collect(input)?;
   Ok(
     blocks
@@ -395,7 +395,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(2)
+    Some(Percentage::with(2))
   );
   // cue 2: size:0%
   assert_eq!(
@@ -403,7 +403,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(0)
+    Some(Percentage::with(0))
   );
   // cue 3: size:00%
   assert_eq!(
@@ -411,7 +411,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(0)
+    Some(Percentage::with(0))
   );
   // cue 4: size:100%
   assert_eq!(
@@ -419,7 +419,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(100)
+    Some(Percentage::with(100))
   );
   // cue 5: size:50%
   assert_eq!(
@@ -427,7 +427,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(50)
+    Some(Percentage::with(50))
   );
   // cue 6: size:1.5% — our u8 parse can't handle floats, so None
   // (acceptable limitation)
@@ -446,15 +446,18 @@ fn wpt_settings_multiple() {
   let s0 = cues[0].header_ref().settings().unwrap();
   assert_eq!(s0.align(), Some(Align::Start));
   assert_eq!(s0.vertical(), Some(Vertical::Lr));
-  assert_eq!(s0.size(), Some(Size::new(50)));
-  assert_eq!(s0.position().map(|p| p.value()), Some(25));
+  assert_eq!(s0.size(), Some(Size::new(Percentage::with(50))));
+  assert_eq!(s0.position().map(|p| p.value()), Some(Percentage::with(25)));
 
   // Cue 1: align:center line:1 vertical:rl size:0% position:100%
   let s1 = cues[1].header_ref().settings().unwrap();
   assert_eq!(s1.align(), Some(Align::Center));
   assert_eq!(s1.vertical(), Some(Vertical::Rl));
-  assert_eq!(s1.size(), Some(Size::new(0)));
-  assert_eq!(s1.position().map(|p| p.value()), Some(100));
+  assert_eq!(s1.size(), Some(Size::new(Percentage::with(0))));
+  assert_eq!(
+    s1.position().map(|p| p.value()),
+    Some(Percentage::with(100))
+  );
 }
 
 // ── whitespace-chars.vtt ────────────────────────────────────────────────────

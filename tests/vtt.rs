@@ -11,18 +11,18 @@ use std::vec::Vec;
 use fasrt::{
   types::*,
   vtt::{
-    Align, Block, Cue, Hour, Line, LineAlign, LineValue, ParseVttError, Parser, Position,
-    PositionAlign, Size, Timestamp, Vertical,
+    Align, Block, Cue, Hour, Line, LineAlign, LineValue, ParseVttError, Parser, Percentage,
+    Position, PositionAlign, Size, Timestamp, Vertical,
   },
 };
 
 /// Helper: collect all blocks.
-fn collect(input: &str) -> Result<Vec<Block<&str>>, ParseVttError> {
+fn collect<'a>(input: &'a str) -> Result<Vec<Block<'a, &'a str>>, ParseVttError> {
   Parser::new(input).collect()
 }
 
 /// Helper: collect only cues.
-fn collect_cues(input: &str) -> Result<Vec<Cue<&str>>, ParseVttError> {
+fn collect_cues<'a>(input: &'a str) -> Result<Vec<Cue<'a, &'a str>>, ParseVttError> {
   let blocks = collect(input)?;
   Ok(
     blocks
@@ -267,9 +267,15 @@ Styled cue
   assert_eq!(cues.len(), 1);
   let settings = cues[0].header_ref().settings().unwrap();
   assert_eq!(settings.vertical(), Some(Vertical::Rl));
-  assert_eq!(settings.line(), Some(&Line::new(LineValue::Percentage(50))));
-  assert_eq!(settings.position(), Some(&Position::new(10)));
-  assert_eq!(settings.size(), Some(Size::new(80)));
+  assert_eq!(
+    settings.line(),
+    Some(&Line::new(LineValue::Percentage(Percentage::with(50))))
+  );
+  assert_eq!(
+    settings.position(),
+    Some(&Position::new(Percentage::with(10)))
+  );
+  assert_eq!(settings.size(), Some(Size::new(Percentage::with(80))));
   assert_eq!(settings.align(), Some(Align::Center));
 }
 
@@ -287,7 +293,7 @@ Test
   assert_eq!(
     settings.line(),
     Some(&Line::with_alignment(
-      LineValue::Percentage(50),
+      LineValue::Percentage(Percentage::with(50)),
       LineAlign::Start
     ))
   );
@@ -320,7 +326,10 @@ Test
   let settings = cues[0].header_ref().settings().unwrap();
   assert_eq!(
     settings.position(),
-    Some(&Position::with_alignment(50, PositionAlign::LineLeft))
+    Some(&Position::with_alignment(
+      Percentage::with(50),
+      PositionAlign::LineLeft
+    ))
   );
 }
 
@@ -662,7 +671,10 @@ fn timestamp_to_duration() {
 mod writer {
   use fasrt::{
     types::*,
-    vtt::{Align, Block, Cue, CueId, CueSettings, Header, Hour, Parser, Size, Timestamp, Writer},
+    vtt::{
+      Align, Block, Cue, CueId, CueOptions, Header, Hour, Parser, Percentage, Size, Timestamp,
+      Writer,
+    },
   };
 
   fn ts(s: u8, ms: u16) -> Timestamp {
@@ -674,7 +686,7 @@ mod writer {
     )
   }
 
-  fn simple_cue(start_s: u8, end_s: u8, body: &str) -> Block<String> {
+  fn simple_cue(start_s: u8, end_s: u8, body: &str) -> Block<'static, String> {
     let header = Header::new(ts(start_s, 0), ts(end_s, 0));
     Block::Cue(Cue::new(header, body.to_string()))
   }
@@ -709,8 +721,7 @@ mod writer {
   #[test]
   fn write_cue_with_identifier() {
     let out = write_to_string(|w| {
-      let header =
-        Header::new(ts(1, 0), ts(4, 0)).with_identifier(CueId::from_string("intro".into()));
+      let header = Header::new(ts(1, 0), ts(4, 0)).with_identifier(CueId::new("intro"));
       let block = Block::Cue(Cue::new(header, "Hello!".to_string()));
       w.write(&block).unwrap();
     });
@@ -721,9 +732,9 @@ mod writer {
   fn write_cue_with_settings() {
     let out = write_to_string(|w| {
       let header = Header::new(ts(1, 0), ts(4, 0)).with_settings(
-        CueSettings::default()
+        CueOptions::default()
           .with_align(Align::Center)
-          .with_size(Size::new(80)),
+          .with_size(Size::new(Percentage::with(80))),
       );
       let block = Block::Cue(Cue::new(header, "Styled".to_string()));
       w.write(&block).unwrap();
@@ -735,7 +746,7 @@ mod writer {
   #[test]
   fn write_note_block() {
     let out = write_to_string(|w| {
-      let block: Block<String> = Block::Note("This is a comment".to_string());
+      let block: Block<'static, String> = Block::Note("This is a comment".to_string());
       w.write(&block).unwrap();
     });
     assert_eq!(out, "WEBVTT\n\nNOTE\nThis is a comment\n");
@@ -744,7 +755,7 @@ mod writer {
   #[test]
   fn write_style_block() {
     let out = write_to_string(|w| {
-      let block: Block<String> = Block::Style("::cue { color: red; }".to_string());
+      let block: Block<'static, String> = Block::Style("::cue { color: red; }".to_string());
       w.write(&block).unwrap();
     });
     assert_eq!(out, "WEBVTT\n\nSTYLE\n::cue { color: red; }\n");
@@ -753,7 +764,7 @@ mod writer {
   #[test]
   fn write_region_block() {
     let out = write_to_string(|w| {
-      let block: Block<String> = Block::Region("id:fred\nwidth:40%".to_string());
+      let block: Block<'static, String> = Block::Region("id:fred\nwidth:40%".to_string());
       w.write(&block).unwrap();
     });
     assert_eq!(out, "WEBVTT\n\nREGION\nid:fred\nwidth:40%\n");
@@ -797,7 +808,7 @@ Hello world!
 Goodbye world!
 ";
 
-    let blocks: Vec<Block<&str>> = Parser::new(original).collect::<Result<_, _>>().unwrap();
+    let blocks: Vec<Block<'_, &str>> = Parser::new(original).collect::<Result<_, _>>().unwrap();
 
     let mut buf = Vec::new();
     let mut w = Writer::new(&mut buf);
