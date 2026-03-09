@@ -351,7 +351,10 @@ impl<'a> CueBodyState<'a> {
 /// Created via [`Parser::new`]. Each call to [`Iterator::next`] yields the
 /// next parsed [`Block`], or an error if the input is malformed.
 ///
-/// The parser follows the W3C WebVTT specification strictly.
+/// The parser handles file-level structure (signature, timing lines, cue
+/// settings, NOTE/STYLE/REGION blocks) per the W3C WebVTT spec.  Cue text
+/// content parsing (tags, entities, tree building) is out of scope — cue
+/// bodies are returned as raw text slices.
 ///
 /// # Example
 ///
