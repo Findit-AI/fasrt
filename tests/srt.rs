@@ -46,18 +46,18 @@ Goodbye world!
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 2);
 
-  let h0 = subs[0].header();
+  let h0 = subs[0].header_ref();
   assert_eq!(h0.index(), NonZeroU64::new(1));
   assert_eq!(h0.start().hours(), Hour::with(0));
   assert_eq!(h0.start().minutes(), Minute::with(0));
   assert_eq!(h0.start().seconds(), Second::with(1));
   assert_eq!(h0.start().millis(), Millisecond::with(0));
   assert_eq!(h0.end().seconds(), Second::with(4));
-  assert_eq!(*subs[0].body(), "Hello world!");
+  assert_eq!(*subs[0].body_ref(), "Hello world!");
 
-  let h1 = subs[1].header();
+  let h1 = subs[1].header_ref();
   assert_eq!(h1.index(), NonZeroU64::new(2));
-  assert_eq!(*subs[1].body(), "Goodbye world!");
+  assert_eq!(*subs[1].body_ref(), "Goodbye world!");
 }
 
 #[test]
@@ -73,7 +73,7 @@ Line three
 
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(*subs[0].body(), "Line one\nLine two\nLine three");
+  assert_eq!(*subs[0].body_ref(), "Line one\nLine two\nLine three");
 }
 
 #[test]
@@ -85,7 +85,7 @@ Hello!";
 
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(*subs[0].body(), "Hello!");
+  assert_eq!(*subs[0].body_ref(), "Hello!");
 }
 
 #[test]
@@ -97,7 +97,7 @@ BOM test
 
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(*subs[0].body(), "BOM test");
+  assert_eq!(*subs[0].body_ref(), "BOM test");
 }
 
 #[test]
@@ -109,8 +109,8 @@ Large hours
 ";
 
   let subs = collect(srt).unwrap();
-  assert_eq!(subs[0].header().start().hours(), Hour::with(100));
-  assert_eq!(subs[0].header().end().hours(), Hour::with(200));
+  assert_eq!(subs[0].header_ref().start().hours(), Hour::with(100));
+  assert_eq!(subs[0].header_ref().end().hours(), Hour::with(200));
 }
 
 #[test]
@@ -174,7 +174,7 @@ fn parse_crlf() {
 
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(*subs[0].body(), "Hello CRLF!");
+  assert_eq!(*subs[0].body_ref(), "Hello CRLF!");
 }
 
 #[test]
@@ -192,8 +192,8 @@ Second
 
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 2);
-  assert_eq!(*subs[0].body(), "First");
-  assert_eq!(*subs[1].body(), "Second");
+  assert_eq!(*subs[0].body_ref(), "First");
+  assert_eq!(*subs[1].body_ref(), "Second");
 }
 
 #[test]
@@ -202,7 +202,7 @@ fn parse_leading_blank_lines() {
 
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(*subs[0].body(), "Hello");
+  assert_eq!(*subs[0].body_ref(), "Hello");
 }
 
 #[test]
@@ -218,8 +218,8 @@ Text
 
   let subs = collect(srt).unwrap();
   assert_eq!(subs.len(), 2);
-  assert_eq!(*subs[0].body(), "");
-  assert_eq!(*subs[1].body(), "Text");
+  assert_eq!(*subs[0].body_ref(), "");
+  assert_eq!(*subs[1].body_ref(), "Text");
 }
 
 #[test]
@@ -237,7 +237,7 @@ Bad
   let mut iter = Parser::strict(srt);
   let first = iter.next().unwrap();
   assert!(first.is_ok());
-  assert_eq!(*first.unwrap().body(), "Good");
+  assert_eq!(*first.unwrap().body_ref(), "Good");
 
   let second = iter.next().unwrap();
   assert!(second.is_err());
@@ -255,7 +255,7 @@ Only one
 
   let mut iter = Parser::strict(srt);
   let entry = iter.next().unwrap().unwrap();
-  assert_eq!(*entry.body(), "Only one");
+  assert_eq!(*entry.body_ref(), "Only one");
   assert!(iter.next().is_none());
 }
 
@@ -351,8 +351,8 @@ No index entry
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(subs[0].header().index(), None);
-  assert_eq!(*subs[0].body(), "No index entry");
+  assert_eq!(subs[0].header_ref().index(), None);
+  assert_eq!(*subs[0].body_ref(), "No index entry");
 }
 
 #[test]
@@ -369,11 +369,11 @@ Without index
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 2);
 
-  assert_eq!(subs[0].header().index(), NonZeroU64::new(1));
-  assert_eq!(*subs[0].body(), "With index");
+  assert_eq!(subs[0].header_ref().index(), NonZeroU64::new(1));
+  assert_eq!(*subs[0].body_ref(), "With index");
 
-  assert_eq!(subs[1].header().index(), None);
-  assert_eq!(*subs[1].body(), "Without index");
+  assert_eq!(subs[1].header_ref().index(), None);
+  assert_eq!(*subs[1].body_ref(), "Without index");
 }
 
 #[test]
@@ -392,8 +392,8 @@ Valid
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 2);
-  assert_eq!(*subs[0].body(), "Someone");
-  assert_eq!(*subs[1].body(), "Valid");
+  assert_eq!(*subs[0].body_ref(), "Someone");
+  assert_eq!(*subs[1].body_ref(), "Valid");
 }
 
 #[test]
@@ -414,8 +414,8 @@ Also OK
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 2);
-  assert_eq!(*subs[0].body(), "OK");
-  assert_eq!(*subs[1].body(), "Also OK");
+  assert_eq!(*subs[0].body_ref(), "OK");
+  assert_eq!(*subs[1].body_ref(), "Also OK");
 }
 
 #[test]
@@ -432,8 +432,8 @@ Valid entry
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(subs[0].header().index(), NonZeroU64::new(2));
-  assert_eq!(*subs[0].body(), "Valid entry");
+  assert_eq!(subs[0].header_ref().index(), NonZeroU64::new(2));
+  assert_eq!(*subs[0].body_ref(), "Valid entry");
 }
 
 #[test]
@@ -459,7 +459,7 @@ Valid
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(subs[0].header().index(), NonZeroU64::new(2));
+  assert_eq!(subs[0].header_ref().index(), NonZeroU64::new(2));
 }
 
 #[test]
@@ -475,7 +475,7 @@ Good
 ";
 
   let subs = collect_lossy(srt).unwrap();
-  assert!(subs.iter().any(|s| *s.body() == "Good"));
+  assert!(subs.iter().any(|s| *s.body_ref() == "Good"));
 }
 
 #[test]
@@ -502,8 +502,8 @@ fn lossy_header_without_index_at_eof() {
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(subs[0].header().index(), None);
-  assert_eq!(*subs[0].body(), "EOF entry");
+  assert_eq!(subs[0].header_ref().index(), None);
+  assert_eq!(*subs[0].body_ref(), "EOF entry");
 }
 
 #[test]
@@ -520,10 +520,10 @@ Valid
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 2);
-  assert_eq!(subs[0].header().index(), None);
-  assert_eq!(*subs[0].body(), "body of broken cue");
-  assert_eq!(subs[1].header().index(), NonZeroU64::new(1));
-  assert_eq!(*subs[1].body(), "Valid");
+  assert_eq!(subs[0].header_ref().index(), None);
+  assert_eq!(*subs[0].body_ref(), "body of broken cue");
+  assert_eq!(subs[1].header_ref().index(), NonZeroU64::new(1));
+  assert_eq!(*subs[1].body_ref(), "Valid");
 }
 
 #[test]
@@ -541,10 +541,10 @@ OK
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 2);
-  assert_eq!(subs[0].header().index(), None);
-  assert_eq!(*subs[0].body(), "body");
-  assert_eq!(subs[1].header().index(), NonZeroU64::new(1));
-  assert_eq!(*subs[1].body(), "OK");
+  assert_eq!(subs[0].header_ref().index(), None);
+  assert_eq!(*subs[0].body_ref(), "body");
+  assert_eq!(subs[1].header_ref().index(), NonZeroU64::new(1));
+  assert_eq!(*subs[1].body_ref(), "OK");
 }
 
 #[test]
@@ -556,8 +556,8 @@ orphan body";
 
   let subs = collect_lossy(srt).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(subs[0].header().index(), None);
-  assert_eq!(*subs[0].body(), "orphan body");
+  assert_eq!(subs[0].header_ref().index(), None);
+  assert_eq!(*subs[0].body_ref(), "orphan body");
 }
 
 #[test]
@@ -651,7 +651,7 @@ No index
 
   let subs = collect_with(srt, opts).unwrap();
   assert_eq!(subs.len(), 1);
-  assert_eq!(subs[0].header().index(), None);
+  assert_eq!(subs[0].header_ref().index(), None);
 }
 
 #[test]
@@ -701,9 +701,9 @@ Third
 
   let subs = collect_with(srt, opts).unwrap();
   assert_eq!(subs.len(), 3);
-  assert_eq!(subs[0].body(), &"First");
-  assert_eq!(subs[1].body(), &"Second");
-  assert_eq!(subs[2].body(), &"Third");
+  assert_eq!(subs[0].body_ref(), &"First");
+  assert_eq!(subs[1].body_ref(), &"Second");
+  assert_eq!(subs[2].body_ref(), &"Third");
 }
 
 // ── Type / encoding tests ──────────────────────────────────────────────────
