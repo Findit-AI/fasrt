@@ -109,3 +109,10 @@ impl<const N: usize> Buffer<N> {
     unsafe { core::str::from_utf8_unchecked(self.0.split_at(len).0) }
   }
 }
+
+#[test]
+fn test_write_0() {
+  let mut buf = Buffer::<10>::new();
+  buf.fmt_u64(0);
+  assert_eq!(buf.as_ref(), "0");
+}
