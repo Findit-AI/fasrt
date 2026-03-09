@@ -3,7 +3,7 @@
 </div>
 <div align="center">
 
-A blazing fast SRT subtitle parser and writer in Rust.
+A blazing fast, zero-copy subtitle parser and writer for SRT and WebVTT in Rust.
 
 [<img alt="github" src="https://img.shields.io/badge/github-findit--ai/fasrt-8da0cb?style=for-the-badge&logo=Github" height="22">][Github-url]
 <img alt="LoC" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fal8n%2F327b2a8aef9003246e45c6e47fe63937%2Fraw%2Ffasrt" height="22">
@@ -26,7 +26,34 @@ fasrt = "0.1"
 
 ## Features
 
-- [ ] Support WebVTT format
+- Zero-copy, zero-allocation parsing — borrows directly from the input string
+- `#![no_std]` support (with optional `alloc` and `std` features)
+- Lazy iterator-based parsing — blocks are yielded on demand
+- DFA-based lexing via [`logos`](https://docs.rs/logos) for fast tokenization
+- Strongly-typed newtypes (`Hour`, `Minute`, `Second`, `Millisecond`, `Percentage`) with compile-time validation
+
+### SRT
+
+- [x] Strict and lossy parsing modes
+- [x] Timestamps (`HH:MM:SS,mmm`)
+- [x] Multiline cue bodies
+- [x] Writer (`std` feature)
+
+### WebVTT
+
+- [x] WEBVTT signature and header text
+- [x] Timestamps (short `MM:SS.mmm` and long `HH:MM:SS.mmm` forms, unbounded hours)
+- [x] Cue identifiers (zero-copy `&str`)
+- [x] Cue settings (`vertical`, `line`, `position`, `size`, `align`, `region`)
+- [x] NOTE, STYLE, REGION blocks
+- [x] CRLF, CR, LF line endings
+- [x] BOM handling
+- [x] Error recovery (`-->` in cue body, malformed timing lines)
+- [x] Writer with round-trip fidelity (`std` feature)
+- [ ] Cue text parsing (tags, entities, tree building)
+- [ ] NULL (U+0000) preprocessing
+- [ ] Float percentages
+- [ ] Full REGION definition parsing
 
 #### License
 

@@ -4,7 +4,7 @@ use logos::{Lexer, Logos};
 
 use crate::error::*;
 
-pub use types::{Entry, Header, Timestamp};
+pub use types::{Entry, Header, Hour, Timestamp};
 
 mod types;
 
@@ -293,7 +293,7 @@ impl Default for Options {
 enum Token {
   /// Header "HH:MM:SS,mmm --> HH:MM:SS,mmm"
   #[regex(
-    r"[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3} --> [0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}",
+    r"[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}",
     parse_header
   )]
   Header(Header),
@@ -303,6 +303,7 @@ enum Token {
   Number(NonZeroU64),
 }
 
+#[inline]
 fn parse_number(s: &mut Lexer<'_, Token>) -> Result<NonZeroU64, ParseSrtError> {
   let slice = s.slice().trim();
   if slice.len() > 20 {
@@ -319,6 +320,7 @@ fn parse_number(s: &mut Lexer<'_, Token>) -> Result<NonZeroU64, ParseSrtError> {
     .and_then(|num| NonZeroU64::new(num).ok_or(ParseIndexNumberError::Zero.into()))
 }
 
+#[inline]
 fn parse_header(s: &mut Lexer<'_, Token>) -> Result<Header, ParseSrtError> {
   let s = s.slice().trim();
   let mut parts = s.split(" --> ");
@@ -332,6 +334,7 @@ fn parse_header(s: &mut Lexer<'_, Token>) -> Result<Header, ParseSrtError> {
   }
 }
 
+#[inline]
 fn parse_timestamp(s: &str) -> Result<Timestamp, ParseSrtError> {
   let mut parts = s.split(",");
 
@@ -630,7 +633,7 @@ fn lex(line: &str) -> Result<Option<Token>, ParseSrtError> {
 /// # Example
 ///
 /// ```
-/// use fasrt::srt::{Writer, Entry, Header, Timestamp};
+/// use fasrt::srt::{Writer, Entry, Header, Hour, Timestamp};
 /// use fasrt::types::*;
 ///
 /// let mut buf = Vec::new();

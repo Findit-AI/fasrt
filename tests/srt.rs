@@ -10,7 +10,7 @@ use core::num::NonZeroU64;
 use std::vec::Vec;
 
 use fasrt::{
-  srt::{Entry, Options, ParseSrtError, Parser, Timestamp},
+  srt::{Entry, Hour, Options, ParseSrtError, Parser, Timestamp},
   types::*,
 };
 
@@ -737,7 +737,7 @@ mod writer {
   use core::num::NonZeroU64;
 
   use fasrt::{
-    srt::{Entry, Header, Parser, Timestamp, Writer},
+    srt::{Entry, Header, Hour, Parser, Timestamp, Writer},
     types::*,
   };
 

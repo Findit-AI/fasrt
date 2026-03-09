@@ -5,7 +5,7 @@ edition = "2024"
 repository = "https://github.com/al8n/fasrt"
 homepage = "https://github.com/al8n/fasrt"
 documentation = "https://docs.rs/fasrt"
-description = "A blazing fast SRT subtitle parser and writer in Rust."
+description = "A blazing fast, zero-copy subtitle parser and writer for SRT and WebVTT in Rust."
 license = "MIT OR Apache-2.0"
 rust-version = "1.85"
 

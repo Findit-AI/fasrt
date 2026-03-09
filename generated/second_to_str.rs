@@ -69,4 +69,4 @@ macro_rules! second_to_str {
   }}
 }
 
-pub(super) use second_to_str;
+pub(crate) use second_to_str;

@@ -1122,4 +1122,4 @@ macro_rules! millisecond_from_str {
   }}
 }
 
-pub(super) use millisecond_from_str;
+pub(crate) use millisecond_from_str;

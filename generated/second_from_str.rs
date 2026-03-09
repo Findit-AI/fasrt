@@ -82,4 +82,4 @@ macro_rules! second_from_str {
   }}
 }
 
-pub(super) use second_from_str;
+pub(crate) use second_from_str;
