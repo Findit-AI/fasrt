@@ -21,7 +21,7 @@ A blazing fast, zero-copy subtitle parser and writer for SRT and WebVTT in Rust.
 
 ```toml
 [dependencies]
-fasrt = "0.1"
+fasrt = "0.2"
 ```
 
 ## Features

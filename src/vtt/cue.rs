@@ -12,6 +12,10 @@ use logos::Logos;
 
 use core::fmt;
 
+pub use tree::*;
+
+mod tree;
+
 /// A recognized WebVTT cue text tag name.
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
 pub enum Tag {
@@ -131,7 +135,7 @@ impl<'a> CueStr<'a> {
   /// Create a `CueStr` that does **not** need normalization.
   ///
   /// ```rust
-  /// use fasrt::vtt::cue_text::CueStr;
+  /// use fasrt::vtt::cue::CueStr;
   ///
   /// let s = CueStr::borrowed("hello");
   /// assert_eq!(s.as_raw(), "hello");
@@ -150,7 +154,7 @@ impl<'a> CueStr<'a> {
   /// and/or NULL bytes).
   ///
   /// ```rust
-  /// use fasrt::vtt::cue_text::CueStr;
+  /// use fasrt::vtt::cue::CueStr;
   ///
   /// let s = CueStr::needs_normalization("a&amp;b");
   /// assert!(s.requires_normalization());
@@ -168,7 +172,7 @@ impl<'a> CueStr<'a> {
   /// Returns the raw string, without any normalization.
   ///
   /// ```rust
-  /// use fasrt::vtt::cue_text::CueStr;
+  /// use fasrt::vtt::cue::CueStr;
   ///
   /// let s = CueStr::needs_normalization("a&amp;b");
   /// assert_eq!(s.as_raw(), "a&amp;b");
@@ -181,7 +185,7 @@ impl<'a> CueStr<'a> {
   /// Whether this text requires normalization (entities or NULLs present).
   ///
   /// ```rust
-  /// use fasrt::vtt::cue_text::CueStr;
+  /// use fasrt::vtt::cue::CueStr;
   ///
   /// assert!(!CueStr::borrowed("hello").requires_normalization());
   /// assert!(CueStr::needs_normalization("&amp;").requires_normalization());
@@ -201,7 +205,7 @@ impl<'a> CueStr<'a> {
   /// On `no_std` without `alloc`, always returns the raw string.
   ///
   /// ```rust
-  /// use fasrt::vtt::cue_text::CueStr;
+  /// use fasrt::vtt::cue::CueStr;
   ///
   /// let plain = CueStr::borrowed("hello");
   /// assert_eq!(plain.normalize(), "hello");
@@ -458,7 +462,7 @@ pub enum CueToken<'a> {
 /// # Example
 ///
 /// ```rust
-/// use fasrt::vtt::cue_text::{CueParser, CueToken, Tag, CueStr};
+/// use fasrt::vtt::cue::{CueParser, CueToken, Tag, CueStr};
 ///
 /// let tokens: Vec<_> = CueParser::new("<b>bold</b>").collect();
 /// assert_eq!(tokens.len(), 3);
@@ -474,7 +478,7 @@ impl<'a> CueParser<'a> {
   /// Create a new cue text parser for the given raw cue text.
   ///
   /// ```rust
-  /// use fasrt::vtt::cue_text::{CueParser, CueToken, Tag};
+  /// use fasrt::vtt::cue::{CueParser, CueToken, Tag};
   ///
   /// let mut parser = CueParser::new("<b>text</b>");
   /// assert!(matches!(parser.next(), Some(CueToken::StartTag { tag: Tag::Bold, .. })));
@@ -649,577 +653,3 @@ fn try_parse_unterminated<'a>(slice: &'a str) -> Option<CueToken<'a>> {
     annotation,
   })
 }
-
-// ── DOM tree (requires alloc) ──────────────────────────────────────────────
-
-#[cfg(any(feature = "alloc", feature = "std"))]
-mod tree {
-  use derive_more::{TryUnwrap, Unwrap};
-
-  use super::*;
-  use crate::vtt::Timestamp;
-
-  use std::vec::Vec;
-
-  /// A node in the cue text DOM tree.
-  #[derive(Debug, Clone, PartialEq, Eq, IsVariant, Unwrap, TryUnwrap)]
-  #[unwrap(ref, ref_mut)]
-  #[try_unwrap(ref, ref_mut)]
-  pub enum Node<'a> {
-    /// A text node.
-    Text(CueStr<'a>),
-    /// A timestamp node.
-    Timestamp(Timestamp),
-    /// A tag node with children.
-    Tag(TagNode<'a>),
-  }
-
-  /// A tag node in the cue text DOM tree.
-  #[derive(Debug, Clone, PartialEq, Eq)]
-  pub struct TagNode<'a> {
-    tag: Tag,
-    classes: &'a str,
-    annotation: Option<&'a str>,
-    children: Vec<Node<'a>>,
-  }
-
-  impl<'a> TagNode<'a> {
-    /// Create a new `TagNode` with the given tag and no classes, annotation,
-    /// or children.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Bold);
-    /// assert_eq!(node.tag(), Tag::Bold);
-    /// assert_eq!(node.classes(), "");
-    /// assert_eq!(node.annotation(), None);
-    /// assert!(node.children().is_empty());
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn new(tag: Tag) -> Self {
-      Self {
-        tag,
-        classes: "",
-        annotation: None,
-        children: Vec::new(),
-      }
-    }
-
-    /// Returns the tag name.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Italic);
-    /// assert_eq!(node.tag(), Tag::Italic);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub const fn tag(&self) -> Tag {
-      self.tag
-    }
-
-    /// Sets the tag name (builder pattern).
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Bold).with_tag(Tag::Italic);
-    /// assert_eq!(node.tag(), Tag::Italic);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub const fn with_tag(mut self, tag: Tag) -> Self {
-      self.tag = tag;
-      self
-    }
-
-    /// Sets the tag name.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let mut node = TagNode::new(Tag::Bold);
-    /// node.set_tag(Tag::Underline);
-    /// assert_eq!(node.tag(), Tag::Underline);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn set_tag(&mut self, tag: Tag) -> &mut Self {
-      self.tag = tag;
-      self
-    }
-
-    /// Returns the dot-separated class names (e.g., `"loud.important"`),
-    /// empty if none.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Class).with_classes("loud.important");
-    /// assert_eq!(node.classes(), "loud.important");
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub const fn classes(&self) -> &'a str {
-      self.classes
-    }
-
-    /// Sets the class names (builder pattern).
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Class).with_classes("highlight");
-    /// assert_eq!(node.classes(), "highlight");
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub const fn with_classes(mut self, classes: &'a str) -> Self {
-      self.classes = classes;
-      self
-    }
-
-    /// Sets the class names.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let mut node = TagNode::new(Tag::Class);
-    /// node.set_classes("loud");
-    /// assert_eq!(node.classes(), "loud");
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn set_classes(&mut self, classes: &'a str) -> &mut Self {
-      self.classes = classes;
-      self
-    }
-
-    /// Returns the annotation text (for `<v>` and `<lang>`), `None` if
-    /// absent.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Voice).with_annotation(Some("Speaker"));
-    /// assert_eq!(node.annotation(), Some("Speaker"));
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub const fn annotation(&self) -> Option<&'a str> {
-      self.annotation
-    }
-
-    /// Sets the annotation text (builder pattern).
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Lang).with_annotation(Some("en"));
-    /// assert_eq!(node.annotation(), Some("en"));
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub const fn with_annotation(mut self, annotation: Option<&'a str>) -> Self {
-      self.annotation = annotation;
-      self
-    }
-
-    /// Sets the annotation text.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let mut node = TagNode::new(Tag::Voice);
-    /// node.set_annotation(Some("Roger"));
-    /// assert_eq!(node.annotation(), Some("Roger"));
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn set_annotation(&mut self, annotation: Option<&'a str>) -> &mut Self {
-      self.annotation = annotation;
-      self
-    }
-
-    /// Returns the child nodes.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Bold);
-    /// assert!(node.children().is_empty());
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn children(&self) -> &[Node<'a>] {
-      &self.children
-    }
-
-    /// Returns a mutable reference to the child nodes.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
-    ///
-    /// let mut node = TagNode::new(Tag::Bold);
-    /// node.children_mut().push(Node::Text(CueStr::borrowed("hello")));
-    /// assert_eq!(node.children().len(), 1);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn children_mut(&mut self) -> &mut Vec<Node<'a>> {
-      &mut self.children
-    }
-
-    /// Sets the child nodes (builder pattern).
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Bold)
-    ///   .with_children(vec![Node::Text(CueStr::borrowed("text"))]);
-    /// assert_eq!(node.children().len(), 1);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn with_children(mut self, children: Vec<Node<'a>>) -> Self {
-      self.children = children;
-      self
-    }
-
-    /// Sets the child nodes.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
-    ///
-    /// let mut node = TagNode::new(Tag::Italic);
-    /// node.set_children(vec![Node::Text(CueStr::borrowed("text"))]);
-    /// assert_eq!(node.children().len(), 1);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn set_children(&mut self, children: Vec<Node<'a>>) -> &mut Self {
-      self.children = children;
-      self
-    }
-
-    /// Consumes the node and returns its children.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Bold)
-    ///   .with_children(vec![Node::Text(CueStr::borrowed("text"))]);
-    /// let children = node.into_children();
-    /// assert_eq!(children.len(), 1);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn into_children(self) -> Vec<Node<'a>> {
-      self.children
-    }
-  }
-
-  impl fmt::Display for TagNode<'_> {
-    /// Serializes the tag node to WebVTT cue text markup.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
-    ///
-    /// let node = TagNode::new(Tag::Bold)
-    ///   .with_children(vec![Node::Text(CueStr::borrowed("hello"))]);
-    /// assert_eq!(node.to_string(), "<b>hello</b>");
-    ///
-    /// let node = TagNode::new(Tag::Lang)
-    ///   .with_annotation(Some("en"))
-    ///   .with_children(vec![Node::Text(CueStr::borrowed("world"))]);
-    /// assert_eq!(node.to_string(), "<lang en>world</lang>");
-    ///
-    /// let node = TagNode::new(Tag::Class)
-    ///   .with_classes("loud.important");
-    /// assert_eq!(node.to_string(), "<c.loud.important></c>");
-    /// # }
-    /// ```
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-      // Opening tag: <tag.classes annotation>
-      write!(f, "<{}", self.tag)?;
-      if !self.classes.is_empty() {
-        write!(f, ".{}", self.classes)?;
-      }
-      if let Some(ann) = self.annotation {
-        write!(f, " {}", ann)?;
-      }
-      f.write_str(">")?;
-
-      // Children
-      for child in &self.children {
-        write!(f, "{}", child)?;
-      }
-
-      // Closing tag: </tag>
-      write!(f, "</{}>", self.tag)
-    }
-  }
-
-  impl fmt::Display for Node<'_> {
-    /// Serializes the node to WebVTT cue text markup.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{Node, CueStr};
-    ///
-    /// let node = Node::Text(CueStr::borrowed("hello"));
-    /// assert_eq!(node.to_string(), "hello");
-    /// # }
-    /// ```
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-      match self {
-        Node::Text(s) => fmt::Display::fmt(s, f),
-        Node::Timestamp(ts) => write!(f, "<{}>", ts.encode().as_str()),
-        Node::Tag(tag) => fmt::Display::fmt(tag, f),
-      }
-    }
-  }
-
-  /// A parsed WebVTT cue text DOM tree.
-  ///
-  /// Built from a [`CueParser`] token stream.  The tree structure follows
-  /// the W3C spec's cue text parsing algorithm (§6.4).
-  ///
-  /// # Example
-  ///
-  /// ```rust
-  /// # #[cfg(any(feature = "alloc", feature = "std"))]
-  /// # {
-  /// use fasrt::vtt::cue_text::{CueText, Tag, Node, CueStr};
-  ///
-  /// let tree = CueText::parse("<b>hello</b> world");
-  /// assert_eq!(tree.children().len(), 2);
-  /// # }
-  /// ```
-  #[derive(Debug, Clone, PartialEq, Eq)]
-  pub struct CueText<'a> {
-    children: Vec<Node<'a>>,
-  }
-
-  impl<'a> CueText<'a> {
-    /// Create a new `CueText` with the given root children.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{CueText, Node, CueStr, TagNode, Tag};
-    ///
-    /// let tree = CueText::new(vec![
-    ///   Node::Tag(TagNode::new(Tag::Bold)
-    ///     .with_children(vec![Node::Text(CueStr::borrowed("hello"))])),
-    ///   Node::Text(CueStr::borrowed(" world")),
-    /// ]);
-    /// assert_eq!(tree.to_string(), "<b>hello</b> world");
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn new(children: Vec<Node<'a>>) -> Self {
-      Self { children }
-    }
-
-    /// Parse raw cue text into a DOM tree.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{CueText, Node, Tag};
-    ///
-    /// let tree = CueText::parse("<b>hello</b> world");
-    /// assert_eq!(tree.children().len(), 2);
-    /// assert!(matches!(&tree.children()[0], Node::Tag(t) if t.tag() == Tag::Bold));
-    /// assert!(matches!(&tree.children()[1], Node::Text(t) if t.normalize() == " world"));
-    /// # }
-    /// ```
-    pub fn parse(input: &'a str) -> Self {
-      let tokens: Vec<_> = CueParser::new(input).collect();
-      let mut root_children = Vec::new();
-      let mut stack: Vec<TagNode<'a>> = Vec::new();
-
-      for token in tokens {
-        match token {
-          CueToken::Text(text) => {
-            let node = Node::Text(text);
-            if let Some(parent) = stack.last_mut() {
-              parent.children_mut().push(node);
-            } else {
-              root_children.push(node);
-            }
-          }
-          CueToken::Timestamp(ts) => {
-            let node = Node::Timestamp(ts);
-            if let Some(parent) = stack.last_mut() {
-              parent.children_mut().push(node);
-            } else {
-              root_children.push(node);
-            }
-          }
-          CueToken::StartTag {
-            tag,
-            classes,
-            annotation,
-          } => {
-            // Per spec: <rt> is only allowed inside <ruby>
-            if tag == Tag::RubyText && !stack.iter().any(|n| n.tag() == Tag::Ruby) {
-              continue;
-            }
-            stack.push(
-              TagNode::new(tag)
-                .with_classes(classes)
-                .with_annotation(annotation),
-            );
-          }
-          CueToken::EndTag(tag) => {
-            // W3C WebVTT spec §6.4 end tag processing:
-
-            // 1. </rt> requires a <ruby> ancestor
-            if tag == Tag::RubyText && !stack.iter().any(|n| n.tag() == Tag::Ruby) {
-              continue;
-            }
-
-            // 2. Generate implied end tags: while top of stack is <rt>, close it
-            while stack.last().is_some_and(|n| n.tag() == Tag::RubyText) {
-              let rt = stack.pop().unwrap();
-              let target = stack
-                .last_mut()
-                .map_or(&mut root_children, |p| p.children_mut());
-              target.push(Node::Tag(rt));
-            }
-
-            // 3. If current node matches, pop it
-            if stack.last().is_some_and(|n| n.tag() == tag) {
-              let node = stack.pop().unwrap();
-              let target = stack
-                .last_mut()
-                .map_or(&mut root_children, |p| p.children_mut());
-              target.push(Node::Tag(node));
-            }
-            // Otherwise: end tag is ignored (spec says jump to next token)
-          }
-        }
-      }
-
-      // Any unclosed tags become root children (fold into parents)
-      while let Some(node) = stack.pop() {
-        let completed = Node::Tag(node);
-        if let Some(parent) = stack.last_mut() {
-          parent.children_mut().push(completed);
-        } else {
-          root_children.push(completed);
-        }
-      }
-
-      Self {
-        children: root_children,
-      }
-    }
-
-    /// Returns the root children of the DOM tree.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::CueText;
-    ///
-    /// let tree = CueText::parse("hello");
-    /// assert_eq!(tree.children().len(), 1);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn children(&self) -> &[Node<'a>] {
-      &self.children
-    }
-
-    /// Returns a mutable reference to the root children.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{CueText, Node, CueStr};
-    ///
-    /// let mut tree = CueText::new(vec![]);
-    /// tree.children_mut().push(Node::Text(CueStr::borrowed("hello")));
-    /// assert_eq!(tree.children().len(), 1);
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    pub fn children_mut(&mut self) -> &mut Vec<Node<'a>> {
-      &mut self.children
-    }
-  }
-
-  impl<'a> From<Vec<Node<'a>>> for CueText<'a> {
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    fn from(children: Vec<Node<'a>>) -> Self {
-      Self { children }
-    }
-  }
-
-  impl fmt::Display for CueText<'_> {
-    /// Serializes the cue text DOM tree to WebVTT cue text markup.
-    ///
-    /// ```rust
-    /// # #[cfg(any(feature = "alloc", feature = "std"))]
-    /// # {
-    /// use fasrt::vtt::cue_text::{CueText, Node, CueStr, TagNode, Tag};
-    ///
-    /// let tree = CueText::new(vec![
-    ///   Node::Tag(TagNode::new(Tag::Bold)
-    ///     .with_children(vec![Node::Text(CueStr::borrowed("hello"))])),
-    ///   Node::Text(CueStr::borrowed(" world")),
-    /// ]);
-    /// assert_eq!(tree.to_string(), "<b>hello</b> world");
-    /// # }
-    /// ```
-    #[cfg_attr(not(tarpaulin), inline(always))]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-      for child in &self.children {
-        write!(f, "{}", child)?;
-      }
-      Ok(())
-    }
-  }
-}
-
-#[cfg(any(feature = "alloc", feature = "std"))]
-pub use tree::*;

@@ -10,7 +10,7 @@ pub use types::{
 mod types;
 
 /// Cue text parsing (tags, entities, timestamps).
-pub mod cue_text;
+pub mod cue;
 
 /// HTML5 named character reference table (auto-generated).
 #[cfg(any(feature = "alloc", feature = "std"))]
@@ -799,15 +799,15 @@ fn body_slice(input: &str, start: usize, end: usize) -> &str {
 
 /// Types that can serve as the body of a WebVTT cue when writing.
 ///
-/// Implemented for [`str`], [`String`], [`CueText`](cue_text::CueText),
-/// and `[`[`Node`](cue_text::Node)`]` slices.  Used by
+/// Implemented for [`str`], [`String`], [`CueText`](cue::CueText),
+/// and `[`[`Node`](cue::Node)`]` slices.  Used by
 /// [`Writer::write_cue`] so you can pass any of these as the cue body.
 ///
 /// # Example
 ///
 /// ```
 /// use fasrt::vtt::{Writer, Header, Timestamp, Hour, CueBody};
-/// use fasrt::vtt::cue_text::{CueText, Node, CueStr, TagNode, Tag};
+/// use fasrt::vtt::cue::{CueText, Node, CueStr, TagNode, Tag};
 /// use fasrt::types::*;
 ///
 /// let header = Header::new(
@@ -840,17 +840,24 @@ pub trait CueBody: sealed::Sealed {
 
 #[cfg(feature = "std")]
 mod sealed {
+  use super::cue::*;
+
   pub trait Sealed {}
 
   impl Sealed for str {}
   impl Sealed for std::string::String {}
-  impl Sealed for super::cue_text::CueText<'_> {}
-  impl Sealed for [super::cue_text::Node<'_>] {}
+  impl<'a, C: Nodes<'a>> Sealed for CueText<'a, C> {}
+  impl Sealed for [Node<'_>] {}
+  impl Sealed for Node<'_> {}
+  impl<T: Sealed> Sealed for Option<T> {}
+  impl Sealed for super::Timestamp {}
+  impl Sealed for super::cue::CueStr<'_> {}
+  impl<C> Sealed for super::cue::TagNode<'_, C> {}
 }
 
 #[cfg(feature = "std")]
 const _: () = {
-  use cue_text::{CueText, Node};
+  use cue::{CueText, Node, Nodes};
 
   impl CueBody for str {
     #[cfg_attr(not(tarpaulin), inline(always))]
@@ -876,7 +883,7 @@ const _: () = {
     }
   }
 
-  impl CueBody for CueText<'_> {
+  impl<'a, C: Nodes<'a>> CueBody for CueText<'a, C> {
     #[cfg_attr(not(tarpaulin), inline(always))]
     fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
       write!(w, "{}", self)
@@ -884,7 +891,7 @@ const _: () = {
 
     #[cfg_attr(not(tarpaulin), inline(always))]
     fn is_empty(&self) -> bool {
-      self.children().is_empty()
+      self.children().as_nodes().is_empty()
     }
   }
 
@@ -900,6 +907,73 @@ const _: () = {
     #[cfg_attr(not(tarpaulin), inline(always))]
     fn is_empty(&self) -> bool {
       self.is_empty()
+    }
+  }
+
+  impl CueBody for Node<'_> {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      write!(w, "{}", self)
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      false
+    }
+  }
+
+  impl CueBody for Timestamp {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      w.write_all(self.encode().as_str().as_bytes())
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      false
+    }
+  }
+
+  impl CueBody for cue::CueStr<'_> {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      w.write_all(self.normalize().as_bytes())
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      false
+    }
+  }
+
+  impl<'a, C> CueBody for cue::TagNode<'a, C>
+  where
+    C: AsRef<[Node<'a>]>,
+  {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      write!(w, "{self}")
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      false
+    }
+  }
+
+  impl<T: CueBody> CueBody for Option<T> {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      if let Some(node) = self {
+        node.write_body(w)
+      } else {
+        Ok(())
+      }
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      self.as_ref().is_some_and(|t| t.is_empty())
     }
   }
 };
@@ -1045,12 +1119,12 @@ const _: () = {
 
     /// Write a cue with any [`CueBody`] type as the body.
     ///
-    /// This accepts raw strings, [`CueText`](cue_text::CueText) DOM trees,
-    /// or `[`[`Node`](cue_text::Node)`]` slices.
+    /// This accepts raw strings, [`CueText`](cue::CueText) DOM trees,
+    /// or `[`[`Node`](cue::Node)`]` slices.
     ///
     /// ```
     /// use fasrt::vtt::{Writer, Header, Timestamp, Hour};
-    /// use fasrt::vtt::cue_text::{CueText, Node, CueStr, TagNode, Tag};
+    /// use fasrt::vtt::cue::{CueText, Node, CueStr, TagNode, Tag};
     /// use fasrt::types::*;
     ///
     /// let header = Header::new(
