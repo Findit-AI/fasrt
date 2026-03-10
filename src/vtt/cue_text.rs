@@ -242,9 +242,9 @@ impl<'a> CueStr<'a> {
     let len = bytes.len();
 
     // Fast path: no `&` or NUL means nothing to decode.
-    #[cfg(feature = "memchr")]
+    #[cfg(all(feature = "memchr", not(miri)))]
     let has_special = memchr::memchr2(b'&', 0, bytes).is_some();
-    #[cfg(not(feature = "memchr"))]
+    #[cfg(not(all(feature = "memchr", not(miri))))]
     let has_special = bytes.iter().any(|&b| b == b'&' || b == 0);
 
     if !has_special {
