@@ -797,6 +797,113 @@ fn body_slice(input: &str, start: usize, end: usize) -> &str {
   if start >= end { "" } else { &input[start..end] }
 }
 
+/// Types that can serve as the body of a WebVTT cue when writing.
+///
+/// Implemented for [`str`], [`String`], [`CueText`](cue_text::CueText),
+/// and `[`[`Node`](cue_text::Node)`]` slices.  Used by
+/// [`Writer::write_cue`] so you can pass any of these as the cue body.
+///
+/// # Example
+///
+/// ```
+/// use fasrt::vtt::{Writer, Header, Timestamp, Hour, CueBody};
+/// use fasrt::vtt::cue_text::{CueText, Node, CueStr, TagNode, Tag};
+/// use fasrt::types::*;
+///
+/// let header = Header::new(
+///   Timestamp::from_hmsm(Hour::new(), Minute::with(0), Second::with(1), Millisecond::with(0)),
+///   Timestamp::from_hmsm(Hour::new(), Minute::with(0), Second::with(4), Millisecond::with(0)),
+/// );
+///
+/// let mut buf = Vec::new();
+/// let mut writer = Writer::new(&mut buf);
+///
+/// // Write with a raw string body
+/// writer.write_cue(&header, "Hello world!").unwrap();
+///
+/// // Write with a CueText DOM body
+/// let body = CueText::new(vec![
+///   Node::Tag(TagNode::new(Tag::Bold)
+///     .with_children(vec![Node::Text(CueStr::borrowed("hello"))])),
+/// ]);
+/// writer.write_cue(&header, &body).unwrap();
+/// ```
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub trait CueBody: sealed::Sealed {
+  /// Write this body's content to the given writer.
+  fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()>;
+
+  /// Whether this body is empty (produces no output).
+  fn is_empty(&self) -> bool;
+}
+
+#[cfg(feature = "std")]
+mod sealed {
+  pub trait Sealed {}
+
+  impl Sealed for str {}
+  impl Sealed for std::string::String {}
+  impl Sealed for super::cue_text::CueText<'_> {}
+  impl Sealed for [super::cue_text::Node<'_>] {}
+}
+
+#[cfg(feature = "std")]
+const _: () = {
+  use cue_text::{CueText, Node};
+
+  impl CueBody for str {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      w.write_all(self.as_bytes())
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      self.is_empty()
+    }
+  }
+
+  impl CueBody for std::string::String {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      w.write_all(self.as_bytes())
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      self.is_empty()
+    }
+  }
+
+  impl CueBody for CueText<'_> {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      write!(w, "{}", self)
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      self.children().is_empty()
+    }
+  }
+
+  impl CueBody for [Node<'_>] {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn write_body<W: std::io::Write>(&self, w: &mut W) -> std::io::Result<()> {
+      for node in self {
+        write!(w, "{}", node)?;
+      }
+      Ok(())
+    }
+
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn is_empty(&self) -> bool {
+      self.is_empty()
+    }
+  }
+};
+
 /// A WebVTT file writer that writes blocks to a [`std::io::Write`] target.
 ///
 /// # Example
@@ -930,6 +1037,90 @@ const _: () = {
           self.inner.write_all(b"REGION\n")?;
           format_region(region, &mut self.inner)?;
         }
+      }
+
+      self.has_written_block = true;
+      Ok(())
+    }
+
+    /// Write a cue with any [`CueBody`] type as the body.
+    ///
+    /// This accepts raw strings, [`CueText`](cue_text::CueText) DOM trees,
+    /// or `[`[`Node`](cue_text::Node)`]` slices.
+    ///
+    /// ```
+    /// use fasrt::vtt::{Writer, Header, Timestamp, Hour};
+    /// use fasrt::vtt::cue_text::{CueText, Node, CueStr, TagNode, Tag};
+    /// use fasrt::types::*;
+    ///
+    /// let header = Header::new(
+    ///   Timestamp::from_hmsm(Hour::new(), Minute::with(0), Second::with(1), Millisecond::with(0)),
+    ///   Timestamp::from_hmsm(Hour::new(), Minute::with(0), Second::with(4), Millisecond::with(0)),
+    /// );
+    ///
+    /// let mut buf = Vec::new();
+    /// let mut writer = Writer::new(&mut buf);
+    ///
+    /// // Raw string
+    /// writer.write_cue(&header, "Hello world!").unwrap();
+    ///
+    /// // CueText DOM
+    /// let body = CueText::new(vec![
+    ///   Node::Tag(TagNode::new(Tag::Lang)
+    ///     .with_annotation(Some("en"))
+    ///     .with_children(vec![Node::Text(CueStr::borrowed("hello"))])),
+    /// ]);
+    /// writer.write_cue(&header, &body).unwrap();
+    ///
+    /// // Node slice
+    /// let nodes = vec![
+    ///   Node::Tag(TagNode::new(Tag::Ruby).with_children(vec![
+    ///     Node::Text(CueStr::borrowed("漢字")),
+    ///     Node::Tag(TagNode::new(Tag::RubyText)
+    ///       .with_children(vec![Node::Text(CueStr::borrowed("かんじ"))])),
+    ///   ])),
+    /// ];
+    /// writer.write_cue(&header, nodes.as_slice()).unwrap();
+    /// ```
+    pub fn write_cue<B: CueBody + ?Sized>(
+      &mut self,
+      header: &Header<'_>,
+      body: &B,
+    ) -> io::Result<()> {
+      if !self.has_written_signature {
+        self.write_header(None)?;
+      }
+
+      self.inner.write_all(b"\n")?;
+
+      // Optional cue identifier
+      if let Some(id) = header.identifier() {
+        self.inner.write_all(id.as_str().as_bytes())?;
+        self.inner.write_all(b"\n")?;
+      }
+
+      // Timing line
+      self
+        .inner
+        .write_all(header.start().encode().as_str().as_bytes())?;
+      self.inner.write_all(b" --> ")?;
+      self
+        .inner
+        .write_all(header.end().encode().as_str().as_bytes())?;
+
+      // Optional cue settings
+      if let Some(settings) = header.settings() {
+        let mut settings_buf = std::vec::Vec::new();
+        format_cue_settings(settings, &mut settings_buf);
+        self.inner.write_all(&settings_buf)?;
+      }
+
+      self.inner.write_all(b"\n")?;
+
+      // Body
+      if !body.is_empty() {
+        body.write_body(&mut self.inner)?;
+        self.inner.write_all(b"\n")?;
       }
 
       self.has_written_block = true;
