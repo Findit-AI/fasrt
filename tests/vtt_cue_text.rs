@@ -102,10 +102,7 @@ fn parse_ruby_tags() {
   assert_eq!(tokens.len(), 6);
   assert!(matches!(
     &tokens[0],
-    CueToken::StartTag {
-      tag: Tag::Ruby,
-      ..
-    }
+    CueToken::StartTag { tag: Tag::Ruby, .. }
   ));
   assert_eq!(tokens[1], CueToken::Text(CueStr::Borrowed("base")));
   assert!(matches!(
@@ -181,10 +178,7 @@ fn parse_nested_tags() {
   assert_eq!(tokens.len(), 5);
   assert!(matches!(
     &tokens[0],
-    CueToken::StartTag {
-      tag: Tag::Bold,
-      ..
-    }
+    CueToken::StartTag { tag: Tag::Bold, .. }
   ));
   assert!(matches!(
     &tokens[1],
@@ -193,10 +187,7 @@ fn parse_nested_tags() {
       ..
     }
   ));
-  assert_eq!(
-    tokens[2],
-    CueToken::Text(CueStr::Borrowed("bold italic"))
-  );
+  assert_eq!(tokens[2], CueToken::Text(CueStr::Borrowed("bold italic")));
   assert_eq!(tokens[3], CueToken::EndTag(Tag::Italic));
   assert_eq!(tokens[4], CueToken::EndTag(Tag::Bold));
 }
@@ -261,7 +252,10 @@ fn tree_mixed_text_and_tags() {
   let tree = CueText::parse("before <b>bold</b> after");
   assert_eq!(tree.children().len(), 3);
   assert!(matches!(&tree.children()[0], Node::Text(t) if t.as_str() == "before "));
-  assert!(matches!(&tree.children()[1], Node::Tag(TagNode { tag: Tag::Bold, .. })));
+  assert!(matches!(
+    &tree.children()[1],
+    Node::Tag(TagNode { tag: Tag::Bold, .. })
+  ));
   assert!(matches!(&tree.children()[2], Node::Text(t) if t.as_str() == " after"));
 }
 

@@ -451,7 +451,10 @@ fn wpt_settings_multiple() {
   assert_eq!(s0.align(), Some(Align::Start));
   assert_eq!(s0.vertical(), Some(Vertical::Lr));
   assert_eq!(s0.size(), Some(Size::new(Percentage::with(50.0))));
-  assert_eq!(s0.position().map(|p| p.value()), Some(Percentage::with(25.0)));
+  assert_eq!(
+    s0.position().map(|p| p.value()),
+    Some(Percentage::with(25.0))
+  );
 
   // Cue 1: align:center line:1 vertical:rl size:0% position:100%
   let s1 = cues[1].header_ref().settings().unwrap();

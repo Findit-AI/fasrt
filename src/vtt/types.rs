@@ -892,7 +892,7 @@ pub enum Vertical {
 /// let pct = Percentage::with(50.0);
 /// assert_eq!(pct.value(), 50.0);
 /// ```
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Into)]
 #[repr(transparent)]
 pub struct Percentage(f64);
 
@@ -904,7 +904,15 @@ impl core::hash::Hash for Percentage {
   }
 }
 
+impl PartialOrd for Percentage {
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+    Some(self.cmp(other))
+  }
+}
+
 impl Ord for Percentage {
+  #[cfg_attr(not(tarpaulin), inline(always))]
   fn cmp(&self, other: &Self) -> core::cmp::Ordering {
     self.0.total_cmp(&other.0)
   }
@@ -917,12 +925,6 @@ impl core::fmt::Display for Percentage {
     } else {
       write!(f, "{}", self.0)
     }
-  }
-}
-
-impl From<Percentage> for f64 {
-  fn from(p: Percentage) -> f64 {
-    p.0
   }
 }
 
@@ -1402,22 +1404,16 @@ impl<'a> RegionId<'a> {
 }
 
 /// Scroll direction for a region.
-#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
+#[derive(Debug, Default, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
 pub enum Scroll {
   /// No scrolling (`scroll:none`).
-  #[display("")]
+  #[display("none")]
+  #[default]
   None,
   /// Scroll up (`scroll:up`).
   #[display("up")]
   Up,
 }
-
-impl Default for Scroll {
-  fn default() -> Self {
-    Self::None
-  }
-}
-
 /// An anchor point as a pair of percentages (x, y).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Anchor {
@@ -1428,7 +1424,7 @@ pub struct Anchor {
 impl Anchor {
   /// Create a new `Anchor` with the given x and y percentages.
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub fn new(x: Percentage, y: Percentage) -> Self {
+  pub const fn new(x: Percentage, y: Percentage) -> Self {
     Self { x, y }
   }
 
@@ -1474,14 +1470,7 @@ pub struct Region<'a> {
 
 impl Default for Region<'_> {
   fn default() -> Self {
-    Self {
-      id: RegionId::new(""),
-      width: Percentage::with(100.0),
-      lines: 3,
-      region_anchor: Anchor::new(Percentage::new(), Percentage::with(100.0)),
-      viewport_anchor: Anchor::new(Percentage::new(), Percentage::with(100.0)),
-      scroll: Scroll::None,
-    }
+    Self::new(RegionId::new(""))
   }
 }
 
@@ -1491,7 +1480,11 @@ impl<'a> Region<'a> {
   pub fn new(id: RegionId<'a>) -> Self {
     Self {
       id,
-      ..Default::default()
+      width: Percentage::with(100.0),
+      lines: 3,
+      region_anchor: Anchor::new(Percentage::new(), Percentage::with(100.0)),
+      viewport_anchor: Anchor::new(Percentage::new(), Percentage::with(100.0)),
+      scroll: Scroll::None,
     }
   }
 

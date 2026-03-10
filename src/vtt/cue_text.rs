@@ -2,62 +2,53 @@
 //!
 //! Provides a lazy [`CueParser`] iterator that yields [`CueToken`]s from raw
 //! cue text, and (with `alloc`/`std`) a [`CueText`] DOM tree built on top.
+use derive_more::{Display, IsVariant};
 
 use core::fmt;
 
 /// A recognized WebVTT cue text tag name.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
 pub enum Tag {
   /// `<b>` — bold.
+  #[display("b")]
   Bold,
   /// `<i>` — italic.
+  #[display("i")]
   Italic,
   /// `<u>` — underline.
+  #[display("u")]
   Underline,
   /// `<c>` — class span.
+  #[display("c")]
   Class,
   /// `<ruby>` — ruby annotation container.
+  #[display("ruby")]
   Ruby,
   /// `<rt>` — ruby text.
+  #[display("rt")]
   RubyText,
   /// `<v>` — voice span.
+  #[display("v")]
   Voice,
   /// `<lang>` — language span.
+  #[display("lang")]
   Lang,
 }
 
 impl Tag {
-  fn from_str(s: &str) -> Option<Self> {
-    Some(match s {
-      "b" => Self::Bold,
-      "i" => Self::Italic,
-      "u" => Self::Underline,
-      "c" => Self::Class,
-      "ruby" => Self::Ruby,
-      "rt" => Self::RubyText,
-      "v" => Self::Voice,
-      "lang" => Self::Lang,
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  const fn from_str(s: &str) -> Option<Self> {
+    Some(match s.as_bytes() {
+      b"b" => Self::Bold,
+      b"i" => Self::Italic,
+      b"u" => Self::Underline,
+      b"c" => Self::Class,
+      b"ruby" => Self::Ruby,
+      b"rt" => Self::RubyText,
+      b"v" => Self::Voice,
+      b"lang" => Self::Lang,
       _ => return None,
     })
-  }
-
-  fn as_str(self) -> &'static str {
-    match self {
-      Self::Bold => "b",
-      Self::Italic => "i",
-      Self::Underline => "u",
-      Self::Class => "c",
-      Self::Ruby => "ruby",
-      Self::RubyText => "rt",
-      Self::Voice => "v",
-      Self::Lang => "lang",
-    }
-  }
-}
-
-impl fmt::Display for Tag {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.write_str(self.as_str())
   }
 }
 
@@ -246,7 +237,11 @@ impl<'a> CueParser<'a> {
     }
 
     // Timestamp tag: <HH:MM:SS.mmm> or <MM:SS.mmm>
-    if tag_content.as_bytes().first().is_some_and(|b| b.is_ascii_digit()) {
+    if tag_content
+      .as_bytes()
+      .first()
+      .is_some_and(|b| b.is_ascii_digit())
+    {
       if let Ok(ts) = super::parse_timestamp(tag_content) {
         return Some(CueToken::Timestamp(ts));
       }
@@ -412,7 +407,9 @@ mod tree {
                 annotation: node.annotation,
                 children: node.children,
               });
-              let target = stack.last_mut().map_or(&mut root_children, |p| &mut p.children);
+              let target = stack
+                .last_mut()
+                .map_or(&mut root_children, |p| &mut p.children);
               for p in popped {
                 target.push(Node::Tag(p));
               }
