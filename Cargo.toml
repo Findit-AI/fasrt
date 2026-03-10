@@ -1,13 +1,15 @@
 [package]
 name = "fasrt"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
-repository = "https://github.com/al8n/fasrt"
-homepage = "https://github.com/al8n/fasrt"
+repository = "https://github.com/Findit-AI/fasrt"
+homepage = "https://github.com/Findit-AI/fasrt"
 documentation = "https://docs.rs/fasrt"
 description = "A blazing fast, zero-copy subtitle parser and writer for SRT and WebVTT in Rust."
 license = "MIT OR Apache-2.0"
 rust-version = "1.85"
+keywords = ["subtitle", "srt", "webvtt", "vtt"]
+categories = ["parser implementations", "parsing tools", "multimedia", "no-std::no-alloc", "encoding"]
 
 [[bench]]
 path = "benches/srt.rs"
@@ -16,16 +18,16 @@ harness = false
 
 [features]
 default = ["std"]
-alloc = []
-std = ["thiserror/std"]
+alloc = ["memchr"]
+std = ["thiserror/std", "memchr"]
 
 [dependencies]
 derive_more = { version = "2", default-features = false, features = ["display", "from", "into", "is_variant", "unwrap", "try_unwrap"] }
 logos = { version = "0.16", default-features = false, features = ["export_derive"] }
 phf = { version = "0.13", default-features = false }
-paste = "1"
-seq-macro = "0.3"
 thiserror = { version = "2", default-features = false }
+
+memchr = { version = "2", optional = true, default-features = false }
 
 [build-dependencies]
 phf_codegen = "0.13"

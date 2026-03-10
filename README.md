@@ -31,6 +31,7 @@ fasrt = "0.1"
 - Lazy iterator-based parsing — blocks are yielded on demand
 - DFA-based lexing via [`logos`](https://docs.rs/logos) for fast tokenization
 - Strongly-typed newtypes (`Hour`, `Minute`, `Second`, `Millisecond`, `Percentage`) with compile-time validation
+- W3C WebVTT spec conformant — validated against [Web Platform Tests](https://github.com/nicr9/webvtt-wpt)
 
 ### SRT
 
@@ -46,16 +47,28 @@ fasrt = "0.1"
 - [x] Cue identifiers (zero-copy `&str`)
 - [x] Cue settings (`vertical`, `line`, `position`, `size`, `align`, `region`)
 - [x] NOTE, STYLE, REGION blocks
+- [x] Full REGION definition parsing (`id`, `width`, `lines`, `regionanchor`, `viewportanchor`, `scroll`)
+- [x] Float percentages (e.g., `50.5%`)
 - [x] CRLF, CR, LF line endings
 - [x] BOM handling
 - [x] Error recovery (`-->` in cue body, malformed timing lines)
 - [x] Writer with round-trip fidelity (`std` feature)
 - [x] Cue text parsing — two-layer design:
-  - `CueParser` iterator: logos DFA-backed, zero-alloc token stream (`no_std`)
-  - `CueText` DOM tree: parsed tree with `Node`/`TagNode` types (`alloc`/`std`)
-  - Lazy text normalization via `CueStr` with `OnceCell`-cached entity decoding and NULL (U+0000 → U+FFFD) replacement
-- [x] Float percentages (e.g., `50.5%`)
-- [x] Full REGION definition parsing (id, width, lines, regionanchor, viewportanchor, scroll)
+  - **`CueParser`**: logos DFA-backed, zero-alloc token stream (`no_std`)
+  - **`CueText`**: W3C spec-compliant DOM tree builder with `Node`/`TagNode` types (`alloc`/`std`)
+  - Tags: `<b>`, `<i>`, `<u>`, `<c>`, `<ruby>`, `<rt>`, `<v>`, `<lang>`, with classes and annotations
+  - W3C tree building algorithm: implied end tags, `<rt>` scoping, unterminated tag handling
+  - Full HTML5 named character reference support (2,231 entities via [`phf`](https://docs.rs/phf) perfect hash map)
+  - Numeric (`&#32;`) and hexadecimal (`&#x20;`) character references
+  - Lazy text normalization via `CueStr` with `OnceCell`-cached decoding and NULL (U+0000 → U+FFFD) replacement
+
+### Optional dependencies
+
+| Feature  | Default | Description |
+|----------|---------|-------------|
+| `std`    | Yes     | Enables `std::io` writer and `thiserror::Error` impls |
+| `alloc`  | No      | Enables `CueText` DOM tree and entity decoding without `std` |
+| `memchr` | Yes (via `alloc`/`std`) | SIMD-accelerated fast path for entity decoding |
 
 #### License
 

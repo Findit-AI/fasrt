@@ -240,6 +240,17 @@ impl<'a> CueStr<'a> {
     let input = self.as_raw();
     let bytes = input.as_bytes();
     let len = bytes.len();
+
+    // Fast path: no `&` or NUL means nothing to decode.
+    #[cfg(feature = "memchr")]
+    let has_special = memchr::memchr2(b'&', 0, bytes).is_some();
+    #[cfg(not(feature = "memchr"))]
+    let has_special = bytes.iter().any(|&b| b == b'&' || b == 0);
+
+    if !has_special {
+      return std::string::String::from(input);
+    }
+
     let mut out = std::string::String::with_capacity(len);
     let mut i = 0;
 
@@ -346,15 +357,22 @@ impl<'a> CueStr<'a> {
   /// Handles both semicolon-terminated and legacy (no semicolon) entities.
   #[cfg(any(feature = "alloc", feature = "std"))]
   fn find_longest_entity_match(candidate: &str) -> Option<(usize, &'static str)> {
-    use html5_entities::HTML5_ENTITIES;
+    use super::html5_entities::HTML5_ENTITIES;
+
+    // The longest HTML5 entity name is 32 chars ("CounterClockwiseContourIntegral;").
+    const MAX_ENTITY_LEN: usize = 32;
 
     let mut best: Option<(usize, &'static str)> = None;
+    let limit = candidate.len().min(MAX_ENTITY_LEN);
 
-    // Try progressively longer prefixes via phf O(1) lookups
-    for end in 1..=candidate.len() {
+    for end in 1..=limit {
       let prefix = &candidate[..end];
       if let Some(s) = HTML5_ENTITIES.get(prefix) {
         best = Some((end, s));
+        // A semicolon-terminated match is always the longest for this name.
+        if prefix.ends_with(';') {
+          break;
+        }
       }
     }
 
@@ -391,17 +409,19 @@ impl PartialEq for CueStr<'_> {
 impl Eq for CueStr<'_> {}
 
 impl fmt::Display for CueStr<'_> {
+  #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.write_str(self.normalize())
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    {
+      f.write_str(self.normalize())
+    }
+
+    #[cfg(not(any(feature = "alloc", feature = "std")))]
+    {
+      f.write_str(self.raw)
+    }
   }
 }
-
-// ── HTML5 character reference table ──────────────────────────────────────────
-
-#[cfg(any(feature = "alloc", feature = "std"))]
-use super::html5_entities;
-
-// ── CueToken ────────────────────────────────────────────────────────────────
 
 /// A token emitted by the [`CueParser`] iterator.
 ///
@@ -428,8 +448,6 @@ pub enum CueToken<'a> {
   /// A timestamp tag like `<00:05.000>`.
   Timestamp(crate::vtt::Timestamp),
 }
-
-// ── CueParser ───────────────────────────────────────────────────────────────
 
 /// A lazy, zero-copy cue text parser backed by a [`logos`] DFA.
 ///
