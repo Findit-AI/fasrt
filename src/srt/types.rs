@@ -344,6 +344,47 @@ impl Timestamp {
     Duration::from_millis(hours * 3_600_000 + minutes * 60_000 + seconds * 1_000 + millis)
   }
 
+  /// Creates a timestamp from a [`Duration`], returning `None` if the hours
+  /// component exceeds 999.
+  ///
+  /// ```rust
+  /// use core::time::Duration;
+  /// use fasrt::srt::{Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let dur = Duration::from_millis(1 * 3_600_000 + 2 * 60_000 + 3 * 1_000 + 4);
+  /// let ts = Timestamp::from_duration(dur).unwrap();
+  /// assert_eq!(ts.hours(), Hour::with(1));
+  /// assert_eq!(ts.minutes(), Minute::with(2));
+  /// assert_eq!(ts.seconds(), Second::with(3));
+  /// assert_eq!(ts.millis(), Millisecond::with(4));
+  ///
+  /// // Round-trip
+  /// assert_eq!(ts.to_duration(), dur);
+  ///
+  /// // Returns None when hours exceed 999
+  /// let too_large = Duration::from_millis(1000 * 3_600_000);
+  /// assert!(Timestamp::from_duration(too_large).is_none());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn from_duration(dur: Duration) -> Option<Self> {
+    let total_millis = dur.as_millis() as u64;
+    let hours = total_millis / 3_600_000;
+    if hours > 999 {
+      return None;
+    }
+    let minutes = ((total_millis % 3_600_000) / 60_000) as u8;
+    let seconds = ((total_millis % 60_000) / 1_000) as u8;
+    let millis = (total_millis % 1_000) as u16;
+
+    Some(Self {
+      hours: Hour::with(hours as u16),
+      minutes: Minute::with(minutes),
+      seconds: Second::with(seconds),
+      millis: Millisecond::with(millis),
+    })
+  }
+
   /// Returns the encoded length of this timestamp.
   ///
   /// ```rust

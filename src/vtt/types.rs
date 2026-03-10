@@ -278,6 +278,39 @@ impl Timestamp {
     )
   }
 
+  /// Creates a timestamp from a [`Duration`].
+  ///
+  /// ```rust
+  /// use core::time::Duration;
+  /// use fasrt::vtt::{Timestamp, Hour};
+  /// use fasrt::types::{Minute, Second, Millisecond};
+  ///
+  /// let dur = Duration::from_millis(1 * 3_600_000 + 2 * 60_000 + 3 * 1_000 + 4);
+  /// let ts = Timestamp::from_duration(dur);
+  /// assert_eq!(ts.hours(), Hour::with(1));
+  /// assert_eq!(ts.minutes(), Minute::with(2));
+  /// assert_eq!(ts.seconds(), Second::with(3));
+  /// assert_eq!(ts.millis(), Millisecond::with(4));
+  ///
+  /// // Round-trip
+  /// assert_eq!(ts.to_duration(), dur);
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn from_duration(dur: Duration) -> Self {
+    let total_millis = dur.as_millis() as u64;
+    let hours = total_millis / 3_600_000;
+    let minutes = ((total_millis % 3_600_000) / 60_000) as u8;
+    let seconds = ((total_millis % 60_000) / 1_000) as u8;
+    let millis = (total_millis % 1_000) as u16;
+
+    Self {
+      hours: Hour::with(hours),
+      minutes: Minute::with(minutes),
+      seconds: Second::with(seconds),
+      millis: Millisecond::with(millis),
+    }
+  }
+
   /// Returns the encoded length of this timestamp.
   ///
   /// When hours are 0, the short form `MM:SS.mmm` is used (no hours prefix).
