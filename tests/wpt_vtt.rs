@@ -29,7 +29,7 @@ fn collect_cues<'a>(input: &'a str) -> Result<Vec<Cue<'a, &'a str>>, ParseVttErr
 
 fn load_vtt(name: &str) -> std::string::String {
   std::fs::read_to_string(std::format!(
-    "{}/tests/webvtt/wpt-file-parsing/{name}",
+    "{}/fixtures/webvtt/wpt-file-parsing/{name}",
     env!("CARGO_MANIFEST_DIR")
   ))
   .unwrap()
@@ -377,8 +377,6 @@ fn wpt_settings_size() {
 
   assert_eq!(cues.len(), 16);
 
-  // Our parser uses u8 for percentages and doesn't handle floats (1.5%).
-  // We test the integer cases here.
   // Cues 0-6 have valid sizes, cues 7-15 have invalid/default sizes.
 
   // cue 0: no size setting
@@ -395,7 +393,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(Percentage::with(2))
+    Some(Percentage::with(2.0))
   );
   // cue 2: size:0%
   assert_eq!(
@@ -403,7 +401,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(Percentage::with(0))
+    Some(Percentage::with(0.0))
   );
   // cue 3: size:00%
   assert_eq!(
@@ -411,7 +409,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(Percentage::with(0))
+    Some(Percentage::with(0.0))
   );
   // cue 4: size:100%
   assert_eq!(
@@ -419,7 +417,7 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(Percentage::with(100))
+    Some(Percentage::with(100.0))
   );
   // cue 5: size:50%
   assert_eq!(
@@ -427,10 +425,16 @@ fn wpt_settings_size() {
       .header_ref()
       .settings()
       .and_then(|s| s.size().map(|s| s.value())),
-    Some(Percentage::with(50))
+    Some(Percentage::with(50.0))
   );
-  // cue 6: size:1.5% — our u8 parse can't handle floats, so None
-  // (acceptable limitation)
+  // cue 6: size:1.5%
+  assert_eq!(
+    cues[6]
+      .header_ref()
+      .settings()
+      .and_then(|s| s.size().map(|s| s.value())),
+    Some(Percentage::with(1.5))
+  );
 }
 
 // ── settings-multiple.vtt ───────────────────────────────────────────────────
@@ -446,17 +450,20 @@ fn wpt_settings_multiple() {
   let s0 = cues[0].header_ref().settings().unwrap();
   assert_eq!(s0.align(), Some(Align::Start));
   assert_eq!(s0.vertical(), Some(Vertical::Lr));
-  assert_eq!(s0.size(), Some(Size::new(Percentage::with(50))));
-  assert_eq!(s0.position().map(|p| p.value()), Some(Percentage::with(25)));
+  assert_eq!(s0.size(), Some(Size::new(Percentage::with(50.0))));
+  assert_eq!(
+    s0.position().map(|p| p.value()),
+    Some(Percentage::with(25.0))
+  );
 
   // Cue 1: align:center line:1 vertical:rl size:0% position:100%
   let s1 = cues[1].header_ref().settings().unwrap();
   assert_eq!(s1.align(), Some(Align::Center));
   assert_eq!(s1.vertical(), Some(Vertical::Rl));
-  assert_eq!(s1.size(), Some(Size::new(Percentage::with(0))));
+  assert_eq!(s1.size(), Some(Size::new(Percentage::with(0.0))));
   assert_eq!(
     s1.position().map(|p| p.value()),
-    Some(Percentage::with(100))
+    Some(Percentage::with(100.0))
   );
 }
 
@@ -516,8 +523,6 @@ fn wpt_nulls() {
 }
 
 // ── regions tests ───────────────────────────────────────────────────────────
-// Our parser stores regions as text blobs, so we test that region blocks
-// are recognized and cues are counted correctly.
 
 #[test]
 fn wpt_regions_old() {
@@ -561,7 +566,7 @@ fn wpt_settings_position() {
 
 fn load_cue_parsing_vtt(name: &str) -> std::string::String {
   std::fs::read_to_string(std::format!(
-    "{}/tests/webvtt/wpt-cue-parsing/{name}",
+    "{}/fixtures/webvtt/wpt-cue-parsing/{name}",
     env!("CARGO_MANIFEST_DIR")
   ))
   .unwrap()
