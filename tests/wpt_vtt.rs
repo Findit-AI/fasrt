@@ -29,7 +29,7 @@ fn collect_cues<'a>(input: &'a str) -> Result<Vec<Cue<'a, &'a str>>, ParseVttErr
 
 fn load_vtt(name: &str) -> std::string::String {
   std::fs::read_to_string(std::format!(
-    "{}/tests/webvtt/wpt-file-parsing/{name}",
+    "{}/fixtures/webvtt/wpt-file-parsing/{name}",
     env!("CARGO_MANIFEST_DIR")
   ))
   .unwrap()
@@ -566,7 +566,7 @@ fn wpt_settings_position() {
 
 fn load_cue_parsing_vtt(name: &str) -> std::string::String {
   std::fs::read_to_string(std::format!(
-    "{}/tests/webvtt/wpt-cue-parsing/{name}",
+    "{}/fixtures/webvtt/wpt-cue-parsing/{name}",
     env!("CARGO_MANIFEST_DIR")
   ))
   .unwrap()

@@ -12,6 +12,10 @@ mod types;
 /// Cue text parsing (tags, entities, timestamps).
 pub mod cue_text;
 
+/// HTML5 named character reference table (auto-generated).
+#[cfg(any(feature = "alloc", feature = "std"))]
+mod html5_entities;
+
 /// The error type for parsing WebVTT files.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ParseVttError {

@@ -50,8 +50,10 @@ fasrt = "0.1"
 - [x] BOM handling
 - [x] Error recovery (`-->` in cue body, malformed timing lines)
 - [x] Writer with round-trip fidelity (`std` feature)
-- [x] Cue text parsing (tags, entities, tree building)
-- [ ] NULL (U+0000) preprocessing
+- [x] Cue text parsing — two-layer design:
+  - `CueParser` iterator: logos DFA-backed, zero-alloc token stream (`no_std`)
+  - `CueText` DOM tree: parsed tree with `Node`/`TagNode` types (`alloc`/`std`)
+  - Lazy text normalization via `CueStr` with `OnceCell`-cached entity decoding and NULL (U+0000 → U+FFFD) replacement
 - [x] Float percentages (e.g., `50.5%`)
 - [x] Full REGION definition parsing (id, width, lines, regionanchor, viewportanchor, scroll)
 

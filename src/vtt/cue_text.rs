@@ -2,7 +2,13 @@
 //!
 //! Provides a lazy [`CueParser`] iterator that yields [`CueToken`]s from raw
 //! cue text, and (with `alloc`/`std`) a [`CueText`] DOM tree built on top.
+//!
+//! Text normalization (entity decoding, NULL replacement) is **deferred** —
+//! the parser only records whether normalization is needed.  Call
+//! [`CueStr::normalize`] when you actually need the decoded text.
+
 use derive_more::{Display, IsVariant};
+use logos::Logos;
 
 use core::fmt;
 
@@ -35,22 +41,367 @@ pub enum Tag {
   Lang,
 }
 
-impl Tag {
+// ── Raw logos lexer (private) ───────────────────────────────────────────────
+
+/// Low-level token produced by the logos DFA.
+///
+/// Logos classifies each tag by name at the DFA level so the iterator
+/// never needs string-based tag-name lookup.
+#[derive(Debug, Logos)]
+enum RawCueToken<'a> {
+  // ── text ──────────────────────────────────────────────────────────────
+  /// A run of text (everything that is not `<`).
+  #[regex(r"[^<]+")]
+  Text(&'a str),
+
+  // ── end tags (exact tokens — highest priority) ────────────────────────
+  #[token("</b>")]
+  EndBold,
+  #[token("</i>")]
+  EndItalic,
+  #[token("</u>")]
+  EndUnderline,
+  #[token("</c>")]
+  EndClass,
+  #[token("</ruby>")]
+  EndRuby,
+  #[token("</rt>")]
+  EndRubyText,
+  #[token("</v>")]
+  EndVoice,
+  #[token("</lang>")]
+  EndLang,
+
+  // ── start tags (with optional `.classes` / ` annotation`) ─────────────
+  #[regex(r"<b[. \t][^>]*>|<b>")]
+  StartBold(&'a str),
+  #[regex(r"<i[. \t][^>]*>|<i>")]
+  StartItalic(&'a str),
+  #[regex(r"<u[. \t][^>]*>|<u>")]
+  StartUnderline(&'a str),
+  #[regex(r"<c[. \t][^>]*>|<c>")]
+  StartClass(&'a str),
+  #[regex(r"<ruby[. \t][^>]*>|<ruby>")]
+  StartRuby(&'a str),
+  #[regex(r"<rt[. \t][^>]*>|<rt>")]
+  StartRubyText(&'a str),
+  #[regex(r"<v[. \t][^>]*>|<v>")]
+  StartVoice(&'a str),
+  #[regex(r"<lang[. \t][^>]*>|<lang>")]
+  StartLang(&'a str),
+
+  // ── timestamp tag ─────────────────────────────────────────────────────
+  /// `<[digits/colons].[3 digits]>` — validated by `parse_timestamp` later.
+  #[regex(r"<[0-9:]+\.[0-9]{3}>")]
+  Timestamp(&'a str),
+
+  // ── fallbacks (skipped by the iterator) ───────────────────────────────
+  /// Any other complete tag.
+  #[regex(r"<[^>]*>")]
+  UnknownTag,
+  /// An unterminated tag: `<…` without a closing `>`.
+  #[regex(r"<[^>]*")]
+  UnterminatedTag,
+}
+
+// ── CueStr ──────────────────────────────────────────────────────────────────
+
+/// A lazily-normalizable cue text string.
+///
+/// Stores the raw slice from the input and a flag indicating whether
+/// normalization is needed (entity decoding, NULL → U+FFFD replacement).
+/// Normalization is deferred until explicitly requested via [`normalize`].
+///
+/// # Zero-copy guarantee
+///
+/// The parser **never** allocates.  When normalization is not needed,
+/// [`normalize`] returns the original borrowed slice.  When it *is* needed,
+/// the decoded text is computed once and cached behind a [`core::cell::OnceCell`]
+/// (requires `alloc` or `std`).
+///
+/// [`normalize`]: CueStr::normalize
+pub struct CueStr<'a> {
+  raw: &'a str,
+  requires_normalization: bool,
+  #[cfg(any(feature = "alloc", feature = "std"))]
+  normalized: core::cell::OnceCell<std::string::String>,
+}
+
+impl<'a> CueStr<'a> {
+  /// Create a `CueStr` that does **not** need normalization.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::cue_text::CueStr;
+  ///
+  /// let s = CueStr::borrowed("hello");
+  /// assert_eq!(s.as_raw(), "hello");
+  /// assert!(!s.requires_normalization());
+  /// ```
+  pub const fn borrowed(s: &'a str) -> Self {
+    Self {
+      raw: s,
+      requires_normalization: false,
+      #[cfg(any(feature = "alloc", feature = "std"))]
+      normalized: core::cell::OnceCell::new(),
+    }
+  }
+
+  /// Create a `CueStr` that **requires** normalization (contains entities
+  /// and/or NULL bytes).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::cue_text::CueStr;
+  ///
+  /// let s = CueStr::needs_normalization("a&amp;b");
+  /// assert!(s.requires_normalization());
+  /// assert_eq!(s.as_raw(), "a&amp;b");
+  /// ```
+  pub const fn needs_normalization(s: &'a str) -> Self {
+    Self {
+      raw: s,
+      requires_normalization: true,
+      #[cfg(any(feature = "alloc", feature = "std"))]
+      normalized: core::cell::OnceCell::new(),
+    }
+  }
+
+  /// Returns the raw string, without any normalization.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::cue_text::CueStr;
+  ///
+  /// let s = CueStr::needs_normalization("a&amp;b");
+  /// assert_eq!(s.as_raw(), "a&amp;b");
+  /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  const fn from_str(s: &str) -> Option<Self> {
-    Some(match s.as_bytes() {
-      b"b" => Self::Bold,
-      b"i" => Self::Italic,
-      b"u" => Self::Underline,
-      b"c" => Self::Class,
-      b"ruby" => Self::Ruby,
-      b"rt" => Self::RubyText,
-      b"v" => Self::Voice,
-      b"lang" => Self::Lang,
-      _ => return None,
-    })
+  pub const fn as_raw(&self) -> &'a str {
+    self.raw
+  }
+
+  /// Whether this text requires normalization (entities or NULLs present).
+  ///
+  /// ```rust
+  /// use fasrt::vtt::cue_text::CueStr;
+  ///
+  /// assert!(!CueStr::borrowed("hello").requires_normalization());
+  /// assert!(CueStr::needs_normalization("&amp;").requires_normalization());
+  /// ```
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn requires_normalization(&self) -> bool {
+    self.requires_normalization
+  }
+
+  /// Returns the normalized string (entities decoded, NULLs replaced with
+  /// U+FFFD).
+  ///
+  /// If no normalization is needed, returns the raw slice directly (no
+  /// allocation). Otherwise, computes the normalized form once and caches
+  /// it.
+  ///
+  /// On `no_std` without `alloc`, always returns the raw string.
+  ///
+  /// ```rust
+  /// use fasrt::vtt::cue_text::CueStr;
+  ///
+  /// let plain = CueStr::borrowed("hello");
+  /// assert_eq!(plain.normalize(), "hello");
+  ///
+  /// # #[cfg(any(feature = "alloc", feature = "std"))]
+  /// # {
+  /// let entity = CueStr::needs_normalization("a&amp;b");
+  /// assert_eq!(entity.normalize(), "a&b");
+  /// # }
+  /// ```
+  pub fn normalize(&self) -> &str {
+    if !self.requires_normalization {
+      return self.raw;
+    }
+
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    {
+      self.normalized.get_or_init(|| self.decode_char_refs())
+    }
+    #[cfg(not(any(feature = "alloc", feature = "std")))]
+    {
+      self.raw
+    }
+  }
+
+  /// Decode HTML5 character references and replace NULLs with U+FFFD.
+  ///
+  /// Implements the WHATWG "consume a character reference" algorithm used by the
+  /// WebVTT cue text tokenizer (the WebVTT Living Standard delegates to the
+  /// HTML spec for character reference processing).
+  ///
+  /// Handles named entities (with and without trailing `;`), numeric decimal
+  /// (`&#32;`), and numeric hexadecimal (`&#x20;`) references.
+  #[cfg(any(feature = "alloc", feature = "std"))]
+  fn decode_char_refs(&self) -> std::string::String {
+    let input = self.as_raw();
+    let bytes = input.as_bytes();
+    let len = bytes.len();
+    let mut out = std::string::String::with_capacity(len);
+    let mut i = 0;
+
+    while i < len {
+      if bytes[i] == 0 {
+        out.push('\u{FFFD}');
+        i += 1;
+      } else if bytes[i] == b'&' {
+        i += 1; // skip '&'
+        if i >= len {
+          out.push('&');
+          continue;
+        }
+
+        if bytes[i] == b'#' {
+          // Numeric character reference
+          i += 1;
+          if i >= len {
+            out.push_str("&#");
+            continue;
+          }
+          let hex = bytes[i] == b'x' || bytes[i] == b'X';
+          if hex {
+            i += 1;
+          }
+          let start = i;
+          if hex {
+            while i < len && bytes[i].is_ascii_hexdigit() {
+              i += 1;
+            }
+          } else {
+            while i < len && bytes[i].is_ascii_digit() {
+              i += 1;
+            }
+          }
+          if start == i {
+            // No digits found — output raw
+            out.push_str(if hex { "&#x" } else { "&#" });
+            continue;
+          }
+          let digits = &input[start..i];
+          let code_point = if hex {
+            u32::from_str_radix(digits, 16).unwrap_or(0xFFFD)
+          } else {
+            digits.parse::<u32>().unwrap_or(0xFFFD)
+          };
+          // Skip trailing ';' if present
+          if i < len && bytes[i] == b';' {
+            i += 1;
+          }
+          if code_point == 0 {
+            out.push('\u{FFFD}');
+          } else if let Some(c) = char::from_u32(code_point) {
+            out.push(c);
+          } else {
+            out.push('\u{FFFD}');
+          }
+        } else if bytes[i].is_ascii_alphanumeric() {
+          // Named character reference — find longest match in entity table
+          let ref_start = i;
+          // Collect alphanumeric characters and ';'
+          while i < len && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b';') {
+            i += 1;
+            // Stop after ';'
+            if bytes[i - 1] == b';' {
+              break;
+            }
+          }
+          let candidate = &input[ref_start..i];
+
+          // Find the longest prefix that matches an entity in the table
+          match Self::find_longest_entity_match(candidate) {
+            Some((matched_len, decoded)) => {
+              out.push_str(decoded);
+              // Rewind: we consumed `candidate` but only matched `matched_len` chars
+              i = ref_start + matched_len;
+            }
+            None => {
+              // No match — output '&' + candidate as literal
+              out.push('&');
+              i = ref_start; // rewind to re-process as text
+            }
+          }
+        } else {
+          // '&' followed by non-alphanumeric, non-'#' — output '&' as literal
+          out.push('&');
+        }
+      } else {
+        // Find run of plain text (no '&' or NULL)
+        let start = i;
+        while i < len && bytes[i] != b'&' && bytes[i] != 0 {
+          i += 1;
+        }
+        out.push_str(&input[start..i]);
+      }
+    }
+
+    out
+  }
+
+  /// Find the longest prefix of `candidate` that matches an HTML5 named entity.
+  ///
+  /// Returns `(matched_length, decoded_str)` for the longest match, or `None`.
+  /// Handles both semicolon-terminated and legacy (no semicolon) entities.
+  #[cfg(any(feature = "alloc", feature = "std"))]
+  fn find_longest_entity_match(candidate: &str) -> Option<(usize, &'static str)> {
+    use html5_entities::HTML5_ENTITIES;
+
+    let mut best: Option<(usize, &'static str)> = None;
+
+    // Try progressively longer prefixes via phf O(1) lookups
+    for end in 1..=candidate.len() {
+      let prefix = &candidate[..end];
+      if let Some(s) = HTML5_ENTITIES.get(prefix) {
+        best = Some((end, s));
+      }
+    }
+
+    best
   }
 }
+
+impl Clone for CueStr<'_> {
+  fn clone(&self) -> Self {
+    Self {
+      raw: self.raw,
+      requires_normalization: self.requires_normalization,
+      #[cfg(any(feature = "alloc", feature = "std"))]
+      normalized: self.normalized.clone(),
+    }
+  }
+}
+
+impl fmt::Debug for CueStr<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_struct("CueStr")
+      .field("raw", &self.raw)
+      .field("requires_normalization", &self.requires_normalization)
+      .finish()
+  }
+}
+
+impl PartialEq for CueStr<'_> {
+  fn eq(&self, other: &Self) -> bool {
+    self.raw == other.raw && self.requires_normalization == other.requires_normalization
+  }
+}
+
+impl Eq for CueStr<'_> {}
+
+impl fmt::Display for CueStr<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.write_str(self.normalize())
+  }
+}
+
+// ── HTML5 character reference table ──────────────────────────────────────────
+
+#[cfg(any(feature = "alloc", feature = "std"))]
+use super::html5_entities;
+
+// ── CueToken ────────────────────────────────────────────────────────────────
 
 /// A token emitted by the [`CueParser`] iterator.
 ///
@@ -58,10 +409,10 @@ impl Tag {
 /// Users who need a DOM tree can use [`CueText::parse`] (requires `alloc`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CueToken<'a> {
-  /// A run of plain text (entities already decoded).
+  /// A run of plain text.
   ///
-  /// If the original text contains no entities, the slice borrows directly
-  /// from the input. Otherwise it holds decoded text.
+  /// The text is stored as a [`CueStr`] with lazy normalization — call
+  /// [`CueStr::normalize`] to decode entities and replace NULLs.
   Text(CueStr<'a>),
   /// A start tag like `<b>`, `<c.classname>`, or `<v Speaker Name>`.
   StartTag {
@@ -78,62 +429,13 @@ pub enum CueToken<'a> {
   Timestamp(crate::vtt::Timestamp),
 }
 
-/// Text content that may or may not own its data.
+// ── CueParser ───────────────────────────────────────────────────────────────
+
+/// A lazy, zero-copy cue text parser backed by a [`logos`] DFA.
 ///
-/// When the raw cue text contains no entities, this borrows the original
-/// slice. When entities are present, the decoded text is stored inline
-/// in a stack buffer.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CueStr<'a> {
-  /// Borrowed directly from the input (no entities).
-  Borrowed(&'a str),
-  /// Decoded text with entities replaced.
-  #[cfg(any(feature = "alloc", feature = "std"))]
-  Owned(std::string::String),
-}
-
-impl CueStr<'_> {
-  /// Returns the string content.
-  pub fn as_str(&self) -> &str {
-    match self {
-      CueStr::Borrowed(s) => s,
-      #[cfg(any(feature = "alloc", feature = "std"))]
-      CueStr::Owned(s) => s.as_str(),
-    }
-  }
-}
-
-impl fmt::Display for CueStr<'_> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.write_str(self.as_str())
-  }
-}
-
-/// Try to decode a WebVTT entity reference. Returns the decoded char(s) and
-/// the number of bytes consumed (including the leading `&` and trailing `;`).
-#[cfg(any(feature = "alloc", feature = "std"))]
-fn decode_entity(s: &str) -> Option<(char, usize)> {
-  // s starts right after `&`
-  let end = s.find(';')?;
-  let name = &s[..end];
-  let ch = match name {
-    "amp" => '&',
-    "lt" => '<',
-    "gt" => '>',
-    "lrm" => '\u{200E}',
-    "rlm" => '\u{200F}',
-    "nbsp" => '\u{00A0}',
-    _ => return None,
-  };
-  Some((ch, end + 1)) // +1 for the `;`
-}
-
-/// A lazy, zero-copy cue text parser.
-///
-/// Yields [`CueToken`]s from raw WebVTT cue text. This is the low-level
-/// parsing layer that does no allocation in `no_std` (text nodes that
-/// contain entities will use [`CueStr::Owned`] when `alloc` is available,
-/// otherwise entities are passed through as-is).
+/// Yields [`CueToken`]s from raw WebVTT cue text.  The parser **never**
+/// allocates — entity decoding and NULL replacement happen lazily inside
+/// [`CueStr`] when the caller requests it.
 ///
 /// # Example
 ///
@@ -147,131 +449,62 @@ fn decode_entity(s: &str) -> Option<(char, usize)> {
 /// assert!(matches!(&tokens[2], CueToken::EndTag(Tag::Bold)));
 /// ```
 pub struct CueParser<'a> {
-  input: &'a str,
-  pos: usize,
+  lexer: logos::Lexer<'a, RawCueToken<'a>>,
 }
 
 impl<'a> CueParser<'a> {
   /// Create a new cue text parser for the given raw cue text.
-  pub const fn new(input: &'a str) -> Self {
-    Self { input, pos: 0 }
-  }
-
-  /// Parse a text run up to the next `<` or end of input.
-  fn parse_text(&mut self) -> CueToken<'a> {
-    let start = self.pos;
-    let bytes = self.input.as_bytes();
-    let mut has_entity = false;
-
-    let mut i = self.pos;
-    while i < bytes.len() {
-      if bytes[i] == b'<' {
-        break;
-      }
-      if bytes[i] == b'&' {
-        has_entity = true;
-      }
-      i += 1;
-    }
-    self.pos = i;
-
-    let raw = &self.input[start..i];
-
-    if !has_entity {
-      return CueToken::Text(CueStr::Borrowed(raw));
-    }
-
-    // Decode entities
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    {
-      let mut decoded = std::string::String::with_capacity(raw.len());
-      let mut j = 0;
-      let raw_bytes = raw.as_bytes();
-      while j < raw_bytes.len() {
-        if raw_bytes[j] == b'&' {
-          if let Some((ch, consumed)) = decode_entity(&raw[j + 1..]) {
-            decoded.push(ch);
-            j += 1 + consumed;
-            continue;
-          }
-        }
-        decoded.push(raw[j..].chars().next().unwrap());
-        j += raw[j..].chars().next().unwrap().len_utf8();
-      }
-      CueToken::Text(CueStr::Owned(decoded))
-    }
-
-    #[cfg(not(any(feature = "alloc", feature = "std")))]
-    {
-      CueToken::Text(CueStr::Borrowed(raw))
+  ///
+  /// ```rust
+  /// use fasrt::vtt::cue_text::{CueParser, CueToken, Tag};
+  ///
+  /// let mut parser = CueParser::new("<b>text</b>");
+  /// assert!(matches!(parser.next(), Some(CueToken::StartTag { tag: Tag::Bold, .. })));
+  /// ```
+  pub fn new(input: &'a str) -> Self {
+    Self {
+      lexer: RawCueToken::lexer(input),
     }
   }
+}
 
-  /// Parse a tag (everything between `<` and `>`).
-  fn parse_tag(&mut self) -> Option<CueToken<'a>> {
-    // Skip the `<`
-    self.pos += 1;
-    let bytes = self.input.as_bytes();
+/// Extract classes and annotation from the portion of a start-tag slice
+/// that follows the tag name (i.e. everything between `<tagname` and `>`).
+///
+/// For `<b.loud.important>` the input is `".loud.important"`.
+/// For `<v Roger Bingham>` the input is `" Roger Bingham"`.
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn parse_tag_attrs(after_name: &str) -> (&str, Option<&str>) {
+  if after_name.is_empty() {
+    return ("", None);
+  }
 
-    // Find the closing `>`
-    let tag_start = self.pos;
-    while self.pos < bytes.len() && bytes[self.pos] != b'>' {
-      self.pos += 1;
+  let (tag_rest, annotation) = match after_name.find([' ', '\t']) {
+    Some(idx) => {
+      let ann = after_name[idx + 1..].trim();
+      (
+        &after_name[..idx],
+        if ann.is_empty() { None } else { Some(ann) },
+      )
     }
+    None => (after_name, None),
+  };
 
-    let tag_content = &self.input[tag_start..self.pos];
+  let classes = tag_rest.strip_prefix('.').unwrap_or("");
+  (classes, annotation)
+}
 
-    // Skip the `>`
-    if self.pos < bytes.len() {
-      self.pos += 1;
-    }
-
-    if tag_content.is_empty() {
-      return None;
-    }
-
-    // End tag: </tagname>
-    if let Some(name) = tag_content.strip_prefix('/') {
-      let name = name.trim();
-      return Tag::from_str(name).map(CueToken::EndTag);
-    }
-
-    // Timestamp tag: <HH:MM:SS.mmm> or <MM:SS.mmm>
-    if tag_content
-      .as_bytes()
-      .first()
-      .is_some_and(|b| b.is_ascii_digit())
-    {
-      if let Ok(ts) = super::parse_timestamp(tag_content) {
-        return Some(CueToken::Timestamp(ts));
-      }
-      return None;
-    }
-
-    // Start tag: <tagname.class1.class2 annotation>
-    // Split on first space/tab to separate tag+classes from annotation
-    let (tag_part, annotation) = match tag_content.find([' ', '\t']) {
-      Some(idx) => {
-        let ann = tag_content[idx + 1..].trim();
-        (
-          &tag_content[..idx],
-          if ann.is_empty() { None } else { Some(ann) },
-        )
-      }
-      None => (tag_content, None),
-    };
-
-    // Split tag_part on first `.` to get tag name and classes
-    let (tag_name, classes) = match tag_part.find('.') {
-      Some(idx) => (&tag_part[..idx], &tag_part[idx + 1..]),
-      None => (tag_part, ""),
-    };
-
-    Tag::from_str(tag_name).map(|tag| CueToken::StartTag {
-      tag,
-      classes,
-      annotation,
-    })
+/// Build a [`CueToken::StartTag`] from the raw logos slice, stripping the
+/// outer `<` / `>` and the tag name of the given byte length.
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn make_start_tag<'a>(tag: Tag, slice: &'a str, name_len: usize) -> CueToken<'a> {
+  // slice = "<tagname…>" — strip `<` (1 byte) + tag name + `>` (1 byte)
+  let inner = &slice[1 + name_len..slice.len() - 1];
+  let (classes, annotation) = parse_tag_attrs(inner);
+  CueToken::StartTag {
+    tag,
+    classes,
+    annotation,
   }
 }
 
@@ -279,41 +512,146 @@ impl<'a> Iterator for CueParser<'a> {
   type Item = CueToken<'a>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    if self.pos >= self.input.len() {
-      return None;
-    }
+    loop {
+      let token = self.lexer.next()?;
+      match token {
+        // ── text ──
+        Ok(RawCueToken::Text(text)) => {
+          let needs_norm = text.as_bytes().iter().any(|&b| b == b'&' || b == 0);
+          return Some(CueToken::Text(if needs_norm {
+            CueStr::needs_normalization(text)
+          } else {
+            CueStr::borrowed(text)
+          }));
+        }
 
-    if self.input.as_bytes()[self.pos] == b'<' {
-      // Try to parse a tag; if it fails (unknown tag), skip it and continue
-      let saved_pos = self.pos;
-      if let Some(token) = self.parse_tag() {
-        return Some(token);
-      }
-      // Unknown tag — if we advanced past it, try next token
-      if self.pos > saved_pos && self.pos < self.input.len() {
-        return self.next();
-      }
-      return None;
-    }
+        // ── end tags ──
+        Ok(RawCueToken::EndBold) => return Some(CueToken::EndTag(Tag::Bold)),
+        Ok(RawCueToken::EndItalic) => return Some(CueToken::EndTag(Tag::Italic)),
+        Ok(RawCueToken::EndUnderline) => return Some(CueToken::EndTag(Tag::Underline)),
+        Ok(RawCueToken::EndClass) => return Some(CueToken::EndTag(Tag::Class)),
+        Ok(RawCueToken::EndRuby) => return Some(CueToken::EndTag(Tag::Ruby)),
+        Ok(RawCueToken::EndRubyText) => return Some(CueToken::EndTag(Tag::RubyText)),
+        Ok(RawCueToken::EndVoice) => return Some(CueToken::EndTag(Tag::Voice)),
+        Ok(RawCueToken::EndLang) => return Some(CueToken::EndTag(Tag::Lang)),
 
-    Some(self.parse_text())
+        // ── start tags ──
+        Ok(RawCueToken::StartBold(s)) => return Some(make_start_tag(Tag::Bold, s, 1)),
+        Ok(RawCueToken::StartItalic(s)) => return Some(make_start_tag(Tag::Italic, s, 1)),
+        Ok(RawCueToken::StartUnderline(s)) => {
+          return Some(make_start_tag(Tag::Underline, s, 1));
+        }
+        Ok(RawCueToken::StartClass(s)) => return Some(make_start_tag(Tag::Class, s, 1)),
+        Ok(RawCueToken::StartRuby(s)) => return Some(make_start_tag(Tag::Ruby, s, 4)),
+        Ok(RawCueToken::StartRubyText(s)) => {
+          return Some(make_start_tag(Tag::RubyText, s, 2));
+        }
+        Ok(RawCueToken::StartVoice(s)) => return Some(make_start_tag(Tag::Voice, s, 1)),
+        Ok(RawCueToken::StartLang(s)) => return Some(make_start_tag(Tag::Lang, s, 4)),
+
+        // ── timestamp ──
+        Ok(RawCueToken::Timestamp(s)) => {
+          let content = &s[1..s.len() - 1]; // strip `<` and `>`
+          if let Ok(ts) = super::parse_timestamp(content) {
+            return Some(CueToken::Timestamp(ts));
+          }
+          // Malformed — skip
+        }
+
+        // ── unknown complete tags — skip ──
+        Ok(RawCueToken::UnknownTag) | Err(()) => {}
+
+        // ── unterminated tags — try to parse as known start tag or timestamp ──
+        Ok(RawCueToken::UnterminatedTag) => {
+          let s = self.lexer.slice();
+          if let Some(token) = try_parse_unterminated(s) {
+            return Some(token);
+          }
+        }
+      }
+    }
   }
+}
+
+/// Try to parse an unterminated tag (`<…` without `>`) as a known start tag
+/// or timestamp.
+///
+/// Per the W3C spec, unterminated tags at end-of-input are still recognized
+/// if they match a known tag name pattern.
+fn try_parse_unterminated<'a>(slice: &'a str) -> Option<CueToken<'a>> {
+  let inner = &slice[1..]; // strip leading `<`
+  if inner.is_empty() {
+    return None;
+  }
+
+  // Try timestamp: digits/colons + "." + 3 digits
+  if inner.as_bytes()[0].is_ascii_digit() {
+    if let Ok(ts) = super::parse_timestamp(inner) {
+      return Some(CueToken::Timestamp(ts));
+    }
+    return None;
+  }
+
+  // Try known start tags
+  let (tag, name_len) = match inner.as_bytes() {
+    [b'b', b'.' | b' ' | b'\t', ..] | [b'b'] => (Tag::Bold, 1),
+    [b'i', b'.' | b' ' | b'\t', ..] | [b'i'] => (Tag::Italic, 1),
+    [b'u', b'.' | b' ' | b'\t', ..] | [b'u'] => (Tag::Underline, 1),
+    [b'c', b'.' | b' ' | b'\t', ..] | [b'c'] => (Tag::Class, 1),
+    [b'v', b'.' | b' ' | b'\t', ..] | [b'v'] => (Tag::Voice, 1),
+    _ if inner.starts_with("ruby") => {
+      if inner.len() == 4 || matches!(inner.as_bytes()[4], b'.' | b' ' | b'\t') {
+        (Tag::Ruby, 4)
+      } else {
+        return None;
+      }
+    }
+    _ if inner.starts_with("rt") => {
+      if inner.len() == 2 || matches!(inner.as_bytes()[2], b'.' | b' ' | b'\t') {
+        (Tag::RubyText, 2)
+      } else {
+        return None;
+      }
+    }
+    _ if inner.starts_with("lang") => {
+      if inner.len() == 4 || matches!(inner.as_bytes()[4], b'.' | b' ' | b'\t') {
+        (Tag::Lang, 4)
+      } else {
+        return None;
+      }
+    }
+    _ => return None,
+  };
+
+  let after_name = &inner[name_len..];
+  let (classes, annotation) = parse_tag_attrs(after_name);
+  Some(CueToken::StartTag {
+    tag,
+    classes,
+    annotation,
+  })
 }
 
 // ── DOM tree (requires alloc) ──────────────────────────────────────────────
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 mod tree {
+  use derive_more::{TryUnwrap, Unwrap};
+
   use super::*;
+  use crate::vtt::Timestamp;
+
   use std::vec::Vec;
 
   /// A node in the cue text DOM tree.
-  #[derive(Debug, Clone, PartialEq, Eq)]
+  #[derive(Debug, Clone, PartialEq, Eq, IsVariant, Unwrap, TryUnwrap)]
+  #[unwrap(ref, ref_mut)]
+  #[try_unwrap(ref, ref_mut)]
   pub enum Node<'a> {
     /// A text node.
     Text(CueStr<'a>),
     /// A timestamp node.
-    Timestamp(crate::vtt::Timestamp),
+    Timestamp(Timestamp),
     /// A tag node with children.
     Tag(TagNode<'a>),
   }
@@ -321,19 +659,284 @@ mod tree {
   /// A tag node in the cue text DOM tree.
   #[derive(Debug, Clone, PartialEq, Eq)]
   pub struct TagNode<'a> {
-    /// The tag name.
-    pub tag: Tag,
-    /// Dot-separated class names, empty if none.
-    pub classes: &'a str,
-    /// Annotation text (for `<v>` and `<lang>`).
-    pub annotation: Option<&'a str>,
-    /// Child nodes.
-    pub children: Vec<Node<'a>>,
+    tag: Tag,
+    classes: &'a str,
+    annotation: Option<&'a str>,
+    children: Vec<Node<'a>>,
+  }
+
+  impl<'a> TagNode<'a> {
+    /// Create a new `TagNode` with the given tag and no classes, annotation,
+    /// or children.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Bold);
+    /// assert_eq!(node.tag(), Tag::Bold);
+    /// assert_eq!(node.classes(), "");
+    /// assert_eq!(node.annotation(), None);
+    /// assert!(node.children().is_empty());
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn new(tag: Tag) -> Self {
+      Self {
+        tag,
+        classes: "",
+        annotation: None,
+        children: Vec::new(),
+      }
+    }
+
+    /// Returns the tag name.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Italic);
+    /// assert_eq!(node.tag(), Tag::Italic);
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub const fn tag(&self) -> Tag {
+      self.tag
+    }
+
+    /// Sets the tag name (builder pattern).
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Bold).with_tag(Tag::Italic);
+    /// assert_eq!(node.tag(), Tag::Italic);
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub const fn with_tag(mut self, tag: Tag) -> Self {
+      self.tag = tag;
+      self
+    }
+
+    /// Sets the tag name.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let mut node = TagNode::new(Tag::Bold);
+    /// node.set_tag(Tag::Underline);
+    /// assert_eq!(node.tag(), Tag::Underline);
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn set_tag(&mut self, tag: Tag) -> &mut Self {
+      self.tag = tag;
+      self
+    }
+
+    /// Returns the dot-separated class names (e.g., `"loud.important"`),
+    /// empty if none.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Class).with_classes("loud.important");
+    /// assert_eq!(node.classes(), "loud.important");
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub const fn classes(&self) -> &'a str {
+      self.classes
+    }
+
+    /// Sets the class names (builder pattern).
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Class).with_classes("highlight");
+    /// assert_eq!(node.classes(), "highlight");
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub const fn with_classes(mut self, classes: &'a str) -> Self {
+      self.classes = classes;
+      self
+    }
+
+    /// Sets the class names.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let mut node = TagNode::new(Tag::Class);
+    /// node.set_classes("loud");
+    /// assert_eq!(node.classes(), "loud");
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn set_classes(&mut self, classes: &'a str) -> &mut Self {
+      self.classes = classes;
+      self
+    }
+
+    /// Returns the annotation text (for `<v>` and `<lang>`), `None` if
+    /// absent.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Voice).with_annotation(Some("Speaker"));
+    /// assert_eq!(node.annotation(), Some("Speaker"));
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub const fn annotation(&self) -> Option<&'a str> {
+      self.annotation
+    }
+
+    /// Sets the annotation text (builder pattern).
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Lang).with_annotation(Some("en"));
+    /// assert_eq!(node.annotation(), Some("en"));
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub const fn with_annotation(mut self, annotation: Option<&'a str>) -> Self {
+      self.annotation = annotation;
+      self
+    }
+
+    /// Sets the annotation text.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let mut node = TagNode::new(Tag::Voice);
+    /// node.set_annotation(Some("Roger"));
+    /// assert_eq!(node.annotation(), Some("Roger"));
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn set_annotation(&mut self, annotation: Option<&'a str>) -> &mut Self {
+      self.annotation = annotation;
+      self
+    }
+
+    /// Returns the child nodes.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Bold);
+    /// assert!(node.children().is_empty());
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn children(&self) -> &[Node<'a>] {
+      &self.children
+    }
+
+    /// Returns a mutable reference to the child nodes.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
+    ///
+    /// let mut node = TagNode::new(Tag::Bold);
+    /// node.children_mut().push(Node::Text(CueStr::borrowed("hello")));
+    /// assert_eq!(node.children().len(), 1);
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn children_mut(&mut self) -> &mut Vec<Node<'a>> {
+      &mut self.children
+    }
+
+    /// Sets the child nodes (builder pattern).
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Bold)
+    ///   .with_children(vec![Node::Text(CueStr::borrowed("text"))]);
+    /// assert_eq!(node.children().len(), 1);
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn with_children(mut self, children: Vec<Node<'a>>) -> Self {
+      self.children = children;
+      self
+    }
+
+    /// Sets the child nodes.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
+    ///
+    /// let mut node = TagNode::new(Tag::Italic);
+    /// node.set_children(vec![Node::Text(CueStr::borrowed("text"))]);
+    /// assert_eq!(node.children().len(), 1);
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn set_children(&mut self, children: Vec<Node<'a>>) -> &mut Self {
+      self.children = children;
+      self
+    }
+
+    /// Consumes the node and returns its children.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{TagNode, Node, CueStr, Tag};
+    ///
+    /// let node = TagNode::new(Tag::Bold)
+    ///   .with_children(vec![Node::Text(CueStr::borrowed("text"))]);
+    /// let children = node.into_children();
+    /// assert_eq!(children.len(), 1);
+    /// # }
+    /// ```
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    pub fn into_children(self) -> Vec<Node<'a>> {
+      self.children
+    }
   }
 
   /// A parsed WebVTT cue text DOM tree.
   ///
-  /// Built from a [`CueParser`] token stream. The tree structure follows
+  /// Built from a [`CueParser`] token stream.  The tree structure follows
   /// the W3C spec's cue text parsing algorithm (§6.4).
   ///
   /// # Example
@@ -354,6 +957,18 @@ mod tree {
 
   impl<'a> CueText<'a> {
     /// Parse raw cue text into a DOM tree.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::{CueText, Node, Tag};
+    ///
+    /// let tree = CueText::parse("<b>hello</b> world");
+    /// assert_eq!(tree.children().len(), 2);
+    /// assert!(matches!(&tree.children()[0], Node::Tag(t) if t.tag() == Tag::Bold));
+    /// assert!(matches!(&tree.children()[1], Node::Text(t) if t.normalize() == " world"));
+    /// # }
+    /// ```
     pub fn parse(input: &'a str) -> Self {
       let tokens: Vec<_> = CueParser::new(input).collect();
       let mut root_children = Vec::new();
@@ -364,7 +979,7 @@ mod tree {
           CueToken::Text(text) => {
             let node = Node::Text(text);
             if let Some(parent) = stack.last_mut() {
-              parent.children.push(node);
+              parent.children_mut().push(node);
             } else {
               root_children.push(node);
             }
@@ -372,7 +987,7 @@ mod tree {
           CueToken::Timestamp(ts) => {
             let node = Node::Timestamp(ts);
             if let Some(parent) = stack.last_mut() {
-              parent.children.push(node);
+              parent.children_mut().push(node);
             } else {
               root_children.push(node);
             }
@@ -382,53 +997,51 @@ mod tree {
             classes,
             annotation,
           } => {
-            stack.push(TagNode {
-              tag,
-              classes,
-              annotation,
-              children: Vec::new(),
-            });
+            // Per spec: <rt> is only allowed inside <ruby>
+            if tag == Tag::RubyText && !stack.iter().any(|n| n.tag() == Tag::Ruby) {
+              continue;
+            }
+            stack.push(
+              TagNode::new(tag)
+                .with_classes(classes)
+                .with_annotation(annotation),
+            );
           }
           CueToken::EndTag(tag) => {
-            // Pop until we find the matching tag (or exhaust the stack)
-            let mut popped: Vec<TagNode<'a>> = Vec::new();
-            let mut matched = None;
-            while let Some(node) = stack.pop() {
-              if node.tag == tag {
-                matched = Some(node);
-                break;
-              }
-              popped.push(node);
+            // W3C WebVTT spec §6.4 end tag processing:
+
+            // 1. </rt> requires a <ruby> ancestor
+            if tag == Tag::RubyText && !stack.iter().any(|n| n.tag() == Tag::Ruby) {
+              continue;
             }
-            if let Some(node) = matched {
-              let completed = Node::Tag(TagNode {
-                tag: node.tag,
-                classes: node.classes,
-                annotation: node.annotation,
-                children: node.children,
-              });
+
+            // 2. Generate implied end tags: while top of stack is <rt>, close it
+            while stack.last().is_some_and(|n| n.tag() == Tag::RubyText) {
+              let rt = stack.pop().unwrap();
               let target = stack
                 .last_mut()
-                .map_or(&mut root_children, |p| &mut p.children);
-              for p in popped {
-                target.push(Node::Tag(p));
-              }
-              target.push(completed);
-            } else {
-              // No matching open tag — push popped nodes to root
-              for p in popped {
-                root_children.push(Node::Tag(p));
-              }
+                .map_or(&mut root_children, |p| p.children_mut());
+              target.push(Node::Tag(rt));
             }
+
+            // 3. If current node matches, pop it
+            if stack.last().is_some_and(|n| n.tag() == tag) {
+              let node = stack.pop().unwrap();
+              let target = stack
+                .last_mut()
+                .map_or(&mut root_children, |p| p.children_mut());
+              target.push(Node::Tag(node));
+            }
+            // Otherwise: end tag is ignored (spec says jump to next token)
           }
         }
       }
 
-      // Any unclosed tags become root children
+      // Any unclosed tags become root children (fold into parents)
       while let Some(node) = stack.pop() {
         let completed = Node::Tag(node);
         if let Some(parent) = stack.last_mut() {
-          parent.children.push(completed);
+          parent.children_mut().push(completed);
         } else {
           root_children.push(completed);
         }
@@ -440,6 +1053,16 @@ mod tree {
     }
 
     /// Returns the root children of the DOM tree.
+    ///
+    /// ```rust
+    /// # #[cfg(any(feature = "alloc", feature = "std"))]
+    /// # {
+    /// use fasrt::vtt::cue_text::CueText;
+    ///
+    /// let tree = CueText::parse("hello");
+    /// assert_eq!(tree.children().len(), 1);
+    /// # }
+    /// ```
     pub fn children(&self) -> &[Node<'a>] {
       &self.children
     }
