@@ -9,7 +9,7 @@ description = "A blazing fast, zero-copy subtitle parser and writer for SRT and 
 license = "MIT OR Apache-2.0"
 rust-version = "1.85"
 keywords = ["subtitle", "srt", "webvtt", "vtt"]
-categories = ["parser-implementations", "parsing-tools", "multimedia", "no-std::no-alloc", "encoding"]
+categories = ["parser-implementations", "parsing", "multimedia", "no-std::no-alloc", "encoding"]
 
 exclude = ["tests", "fixtures"]
 
