@@ -11,8 +11,8 @@ use std::vec::Vec;
 use fasrt::{
   types::*,
   vtt::{
-    Align, Block, Cue, Hour, Line, LineAlign, LineValue, ParseVttError, Parser, Percentage,
-    Position, PositionAlign, Size, Timestamp, Vertical,
+    Align, Anchor, Block, Cue, Hour, Line, LineAlign, LineValue, ParseVttError, Parser, Percentage,
+    Position, PositionAlign, RegionId, Scroll, Size, Timestamp, Vertical,
   },
 };
 
@@ -269,13 +269,13 @@ Styled cue
   assert_eq!(settings.vertical(), Some(Vertical::Rl));
   assert_eq!(
     settings.line(),
-    Some(&Line::new(LineValue::Percentage(Percentage::with(50))))
+    Some(&Line::new(LineValue::Percentage(Percentage::with(50.0))))
   );
   assert_eq!(
     settings.position(),
-    Some(&Position::new(Percentage::with(10)))
+    Some(&Position::new(Percentage::with(10.0)))
   );
-  assert_eq!(settings.size(), Some(Size::new(Percentage::with(80))));
+  assert_eq!(settings.size(), Some(Size::new(Percentage::with(80.0))));
   assert_eq!(settings.align(), Some(Align::Center));
 }
 
@@ -293,7 +293,7 @@ Test
   assert_eq!(
     settings.line(),
     Some(&Line::with_alignment(
-      LineValue::Percentage(Percentage::with(50)),
+      LineValue::Percentage(Percentage::with(50.0)),
       LineAlign::Start
     ))
   );
@@ -327,9 +327,27 @@ Test
   assert_eq!(
     settings.position(),
     Some(&Position::with_alignment(
-      Percentage::with(50),
+      Percentage::with(50.0),
       PositionAlign::LineLeft
     ))
+  );
+}
+
+#[test]
+fn parse_cue_float_percentage() {
+  let vtt = "\
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000 size:50.5% position:99.9%
+Test
+";
+
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  assert_eq!(settings.size(), Some(Size::new(Percentage::with(50.5))));
+  assert_eq!(
+    settings.position(),
+    Some(&Position::new(Percentage::with(99.9)))
   );
 }
 
@@ -544,9 +562,72 @@ Hello
   let blocks = collect(vtt).unwrap();
   assert_eq!(blocks.len(), 2);
   match &blocks[0] {
-    Block::Region(text) => {
-      assert!(text.contains("id:fred"));
-      assert!(text.contains("width:40%"));
+    Block::Region(region) => {
+      assert_eq!(region.id(), RegionId::new("fred"));
+      assert_eq!(region.width(), Percentage::with(40.0));
+      assert_eq!(region.lines(), 3);
+    }
+    _ => panic!("expected Region block"),
+  }
+}
+
+#[test]
+fn parse_region_full_settings() {
+  let vtt = "\
+WEBVTT
+
+REGION
+id:nav
+width:40%
+lines:5
+regionanchor:0%,100%
+viewportanchor:10%,90.5%
+scroll:up
+
+00:00:01.000 --> 00:00:04.000
+Hello
+";
+
+  let blocks = collect(vtt).unwrap();
+  assert_eq!(blocks.len(), 2);
+  match &blocks[0] {
+    Block::Region(region) => {
+      assert_eq!(region.id(), RegionId::new("nav"));
+      assert_eq!(region.width(), Percentage::with(40.0));
+      assert_eq!(region.lines(), 5);
+      assert_eq!(
+        region.region_anchor(),
+        Anchor::new(Percentage::with(0.0), Percentage::with(100.0))
+      );
+      assert_eq!(
+        region.viewport_anchor(),
+        Anchor::new(Percentage::with(10.0), Percentage::with(90.5))
+      );
+      assert_eq!(region.scroll(), Scroll::Up);
+    }
+    _ => panic!("expected Region block"),
+  }
+}
+
+#[test]
+fn parse_region_defaults() {
+  let vtt = "\
+WEBVTT
+
+REGION
+id:empty
+
+00:00:01.000 --> 00:00:04.000
+Hello
+";
+
+  let blocks = collect(vtt).unwrap();
+  match &blocks[0] {
+    Block::Region(region) => {
+      assert_eq!(region.id(), RegionId::new("empty"));
+      assert_eq!(region.width(), Percentage::with(100.0));
+      assert_eq!(region.lines(), 3);
+      assert_eq!(region.scroll(), Scroll::None);
     }
     _ => panic!("expected Region block"),
   }
@@ -672,8 +753,8 @@ mod writer {
   use fasrt::{
     types::*,
     vtt::{
-      Align, Block, Cue, CueId, CueOptions, Header, Hour, Parser, Percentage, Size, Timestamp,
-      Writer,
+      Align, Block, Cue, CueId, CueOptions, Header, Hour, Parser, Percentage, Region, RegionId,
+      Size, Timestamp, Writer,
     },
   };
 
@@ -734,7 +815,7 @@ mod writer {
       let header = Header::new(ts(1, 0), ts(4, 0)).with_settings(
         CueOptions::default()
           .with_align(Align::Center)
-          .with_size(Size::new(Percentage::with(80))),
+          .with_size(Size::new(Percentage::with(80.0))),
       );
       let block = Block::Cue(Cue::new(header, "Styled".to_string()));
       w.write(&block).unwrap();
@@ -764,7 +845,8 @@ mod writer {
   #[test]
   fn write_region_block() {
     let out = write_to_string(|w| {
-      let block: Block<'static, String> = Block::Region("id:fred\nwidth:40%".to_string());
+      let region = Region::new(RegionId::new("fred")).with_width(Percentage::with(40.0));
+      let block: Block<'static, String> = Block::Region(region);
       w.write(&block).unwrap();
     });
     assert_eq!(out, "WEBVTT\n\nREGION\nid:fred\nwidth:40%\n");

@@ -491,8 +491,8 @@ impl<'a> CueOptions<'a> {
   /// ```rust
   /// use fasrt::vtt::{CueOptions, Line, LineValue, Percentage};
   ///
-  /// let s = CueOptions::default().with_line(Line::new(LineValue::Percentage(Percentage::with(50))));
-  /// assert_eq!(s.line().unwrap().value(), LineValue::Percentage(Percentage::with(50)));
+  /// let s = CueOptions::default().with_line(Line::new(LineValue::Percentage(Percentage::with(50.0))));
+  /// assert_eq!(s.line().unwrap().value(), LineValue::Percentage(Percentage::with(50.0)));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with_line(mut self, line: Line) -> Self {
@@ -538,7 +538,7 @@ impl<'a> CueOptions<'a> {
   /// use fasrt::vtt::{CueOptions, Line, LineValue, Percentage};
   ///
   /// let mut s = CueOptions::default();
-  /// s.update_line(Some(Line::new(LineValue::Percentage(Percentage::with(25)))));
+  /// s.update_line(Some(Line::new(LineValue::Percentage(Percentage::with(25.0)))));
   /// assert!(s.line().is_some());
   /// s.update_line(None);
   /// assert_eq!(s.line(), None);
@@ -557,8 +557,8 @@ impl<'a> CueOptions<'a> {
   /// let s = CueOptions::default();
   /// assert_eq!(s.position(), None);
   ///
-  /// let s = CueOptions::default().with_position(Position::new(Percentage::with(50)));
-  /// assert_eq!(s.position().unwrap().value(), Percentage::with(50));
+  /// let s = CueOptions::default().with_position(Position::new(Percentage::with(50.0)));
+  /// assert_eq!(s.position().unwrap().value(), Percentage::with(50.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn position(&self) -> Option<&Position> {
@@ -571,9 +571,9 @@ impl<'a> CueOptions<'a> {
   /// use fasrt::vtt::{CueOptions, Percentage, Position, PositionAlign};
   ///
   /// let s = CueOptions::default()
-  ///   .with_position(Position::with_alignment(Percentage::with(25), PositionAlign::LineLeft));
+  ///   .with_position(Position::with_alignment(Percentage::with(25.0), PositionAlign::LineLeft));
   /// let pos = s.position().unwrap();
-  /// assert_eq!(pos.value(), Percentage::with(25));
+  /// assert_eq!(pos.value(), Percentage::with(25.0));
   /// assert_eq!(pos.alignment(), Some(PositionAlign::LineLeft));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
@@ -588,8 +588,8 @@ impl<'a> CueOptions<'a> {
   /// use fasrt::vtt::{CueOptions, Percentage, Position};
   ///
   /// let mut s = CueOptions::default();
-  /// s.set_position(Position::new(Percentage::with(75)));
-  /// assert_eq!(s.position().unwrap().value(), Percentage::with(75));
+  /// s.set_position(Position::new(Percentage::with(75.0)));
+  /// assert_eq!(s.position().unwrap().value(), Percentage::with(75.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_position(&mut self, position: Position) -> &mut Self {
@@ -602,8 +602,8 @@ impl<'a> CueOptions<'a> {
   /// ```rust
   /// use fasrt::vtt::{CueOptions, Percentage, Position};
   ///
-  /// let s = CueOptions::default().maybe_position(Some(Position::new(Percentage::with(60))));
-  /// assert_eq!(s.position().unwrap().value(), Percentage::with(60));
+  /// let s = CueOptions::default().maybe_position(Some(Position::new(Percentage::with(60.0))));
+  /// assert_eq!(s.position().unwrap().value(), Percentage::with(60.0));
   ///
   /// let s = CueOptions::default().maybe_position(None);
   /// assert_eq!(s.position(), None);
@@ -620,7 +620,7 @@ impl<'a> CueOptions<'a> {
   /// use fasrt::vtt::{CueOptions, Percentage, Position};
   ///
   /// let mut s = CueOptions::default();
-  /// s.update_position(Some(Position::new(Percentage::with(40))));
+  /// s.update_position(Some(Position::new(Percentage::with(40.0))));
   /// assert!(s.position().is_some());
   /// s.update_position(None);
   /// assert_eq!(s.position(), None);
@@ -639,8 +639,8 @@ impl<'a> CueOptions<'a> {
   /// let s = CueOptions::default();
   /// assert_eq!(s.size(), None);
   ///
-  /// let s = CueOptions::default().with_size(Size::new(Percentage::with(80)));
-  /// assert_eq!(s.size().unwrap().value(), Percentage::with(80));
+  /// let s = CueOptions::default().with_size(Size::new(Percentage::with(80.0)));
+  /// assert_eq!(s.size().unwrap().value(), Percentage::with(80.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn size(&self) -> Option<Size> {
@@ -652,8 +652,8 @@ impl<'a> CueOptions<'a> {
   /// ```rust
   /// use fasrt::vtt::{CueOptions, Percentage, Size};
   ///
-  /// let s = CueOptions::default().with_size(Size::new(Percentage::with(100)));
-  /// assert_eq!(s.size().unwrap().value(), Percentage::with(100));
+  /// let s = CueOptions::default().with_size(Size::new(Percentage::with(100.0)));
+  /// assert_eq!(s.size().unwrap().value(), Percentage::with(100.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn with_size(mut self, size: Size) -> Self {
@@ -667,8 +667,8 @@ impl<'a> CueOptions<'a> {
   /// use fasrt::vtt::{CueOptions, Percentage, Size};
   ///
   /// let mut s = CueOptions::default();
-  /// s.set_size(Size::new(Percentage::with(50)));
-  /// assert_eq!(s.size().unwrap().value(), Percentage::with(50));
+  /// s.set_size(Size::new(Percentage::with(50.0)));
+  /// assert_eq!(s.size().unwrap().value(), Percentage::with(50.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn set_size(&mut self, size: Size) -> &mut Self {
@@ -681,8 +681,8 @@ impl<'a> CueOptions<'a> {
   /// ```rust
   /// use fasrt::vtt::{CueOptions, Percentage, Size};
   ///
-  /// let s = CueOptions::default().maybe_size(Some(Size::new(Percentage::with(60))));
-  /// assert_eq!(s.size().unwrap().value(), Percentage::with(60));
+  /// let s = CueOptions::default().maybe_size(Some(Size::new(Percentage::with(60.0))));
+  /// assert_eq!(s.size().unwrap().value(), Percentage::with(60.0));
   ///
   /// let s = CueOptions::default().maybe_size(None);
   /// assert_eq!(s.size(), None);
@@ -699,7 +699,7 @@ impl<'a> CueOptions<'a> {
   /// use fasrt::vtt::{CueOptions, Percentage, Size};
   ///
   /// let mut s = CueOptions::default();
-  /// s.update_size(Some(Size::new(Percentage::with(30))));
+  /// s.update_size(Some(Size::new(Percentage::with(30.0))));
   /// assert!(s.size().is_some());
   /// s.update_size(None);
   /// assert_eq!(s.size(), None);
@@ -880,21 +880,51 @@ pub enum Vertical {
   Lr,
 }
 
-/// A percentage value (0–100).
+/// A percentage value (0.0–100.0).
 ///
-/// This is a newtype wrapper around `u8` that guarantees the value is
+/// This is a newtype wrapper around `f64` that guarantees the value is
 /// within the valid range for WebVTT percentage settings.
+/// Per the W3C spec, percentages may include decimals (e.g., `50.5%`).
 ///
 /// ```rust
 /// use fasrt::vtt::Percentage;
 ///
-/// let pct = Percentage::with(50);
-/// assert_eq!(pct.value(), 50);
+/// let pct = Percentage::with(50.0);
+/// assert_eq!(pct.value(), 50.0);
 /// ```
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, Into)]
-#[display("{_0}")]
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(transparent)]
-pub struct Percentage(u8);
+pub struct Percentage(f64);
+
+impl Eq for Percentage {}
+
+impl core::hash::Hash for Percentage {
+  fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+    self.0.to_bits().hash(state);
+  }
+}
+
+impl Ord for Percentage {
+  fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+    self.0.total_cmp(&other.0)
+  }
+}
+
+impl core::fmt::Display for Percentage {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    if self.0 == (self.0 as i64) as f64 {
+      write!(f, "{}", self.0 as i64)
+    } else {
+      write!(f, "{}", self.0)
+    }
+  }
+}
+
+impl From<Percentage> for f64 {
+  fn from(p: Percentage) -> f64 {
+    p.0
+  }
+}
 
 impl Percentage {
   /// Create a new `Percentage` with value 0.
@@ -903,55 +933,60 @@ impl Percentage {
   /// use fasrt::vtt::Percentage;
   ///
   /// let pct = Percentage::new();
-  /// assert_eq!(pct.value(), 0);
+  /// assert_eq!(pct.value(), 0.0);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new() -> Self {
-    Self(0)
+    Self(0.0)
   }
 
-  /// Create a new `Percentage` from a `u8`.
+  /// Create a new `Percentage` from an `f64`.
   ///
   /// # Panics
-  /// Panics if the value is greater than 100.
+  /// Panics if the value is not in the range 0.0..=100.0.
   ///
   /// ```rust
   /// use fasrt::vtt::Percentage;
   ///
-  /// let pct = Percentage::with(100);
-  /// assert_eq!(pct.value(), 100);
+  /// let pct = Percentage::with(100.0);
+  /// assert_eq!(pct.value(), 100.0);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn with(value: u8) -> Self {
-    if value > 100 {
-      panic!("Percentage value must be between 0-100");
-    }
+  pub fn with(value: f64) -> Self {
+    assert!(
+      (0.0..=100.0).contains(&value),
+      "Percentage value must be between 0.0 and 100.0"
+    );
     Self(value)
   }
 
-  /// Try to create a new `Percentage` from a `u8`, returning `None` if the value is out of range.
+  /// Try to create a new `Percentage` from an `f64`, returning `None` if the value is out of range.
   ///
   /// ```rust
   /// use fasrt::vtt::Percentage;
   ///
-  /// assert_eq!(Percentage::try_with(50), Some(Percentage::with(50)));
-  /// assert_eq!(Percentage::try_with(101), None);
+  /// assert_eq!(Percentage::try_with(50.0), Some(Percentage::with(50.0)));
+  /// assert_eq!(Percentage::try_with(101.0), None);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn try_with(value: u8) -> Option<Self> {
-    if value > 100 { None } else { Some(Self(value)) }
+  pub fn try_with(value: f64) -> Option<Self> {
+    if (0.0..=100.0).contains(&value) {
+      Some(Self(value))
+    } else {
+      None
+    }
   }
 
-  /// Returns the inner `u8` value.
+  /// Returns the inner `f64` value.
   ///
   /// ```rust
   /// use fasrt::vtt::Percentage;
   ///
-  /// let pct = Percentage::with(75);
-  /// assert_eq!(pct.value(), 75);
+  /// let pct = Percentage::with(75.0);
+  /// assert_eq!(pct.value(), 75.0);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn value(&self) -> u8 {
+  pub const fn value(&self) -> f64 {
     self.0
   }
 }
@@ -996,8 +1031,8 @@ impl Line {
   /// ```rust
   /// use fasrt::vtt::{Line, LineValue, Percentage};
   ///
-  /// let line = Line::new(LineValue::Percentage(Percentage::with(50)));
-  /// assert_eq!(line.value(), LineValue::Percentage(Percentage::with(50)));
+  /// let line = Line::new(LineValue::Percentage(Percentage::with(50.0)));
+  /// assert_eq!(line.value(), LineValue::Percentage(Percentage::with(50.0)));
   /// assert_eq!(line.alignment(), None);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
@@ -1044,8 +1079,8 @@ impl Line {
   /// use fasrt::vtt::{Line, LineValue, Percentage};
   ///
   /// let mut line = Line::new(LineValue::Number(1));
-  /// line.set_value(LineValue::Percentage(Percentage::with(80)));
-  /// assert_eq!(line.value(), LineValue::Percentage(Percentage::with(80)));
+  /// line.set_value(LineValue::Percentage(Percentage::with(80.0)));
+  /// assert_eq!(line.value(), LineValue::Percentage(Percentage::with(80.0)));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn set_value(&mut self, value: LineValue) -> &mut Self {
@@ -1074,7 +1109,7 @@ impl Line {
   /// ```rust
   /// use fasrt::vtt::{Line, LineAlign, LineValue, Percentage};
   ///
-  /// let mut line = Line::new(LineValue::Percentage(Percentage::with(50)));
+  /// let mut line = Line::new(LineValue::Percentage(Percentage::with(50.0)));
   /// line.set_alignment(LineAlign::End);
   /// assert_eq!(line.alignment(), Some(LineAlign::End));
   /// ```
@@ -1106,7 +1141,7 @@ impl Line {
   /// ```rust
   /// use fasrt::vtt::{Line, LineAlign, LineValue, Percentage};
   ///
-  /// let mut line = Line::new(LineValue::Percentage(Percentage::with(50)));
+  /// let mut line = Line::new(LineValue::Percentage(Percentage::with(50.0)));
   /// line.update_alignment(Some(LineAlign::Center));
   /// assert_eq!(line.alignment(), Some(LineAlign::Center));
   /// line.update_alignment(None);
@@ -1149,8 +1184,8 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position};
   ///
-  /// let pos = Position::new(Percentage::with(50));
-  /// assert_eq!(pos.value(), Percentage::with(50));
+  /// let pos = Position::new(Percentage::with(50.0));
+  /// assert_eq!(pos.value(), Percentage::with(50.0));
   /// assert_eq!(pos.alignment(), None);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
@@ -1166,8 +1201,8 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position, PositionAlign};
   ///
-  /// let pos = Position::with_alignment(Percentage::with(25), PositionAlign::LineLeft);
-  /// assert_eq!(pos.value(), Percentage::with(25));
+  /// let pos = Position::with_alignment(Percentage::with(25.0), PositionAlign::LineLeft);
+  /// assert_eq!(pos.value(), Percentage::with(25.0));
   /// assert_eq!(pos.alignment(), Some(PositionAlign::LineLeft));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
@@ -1183,8 +1218,8 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position};
   ///
-  /// let pos = Position::new(Percentage::with(75));
-  /// assert_eq!(pos.value(), Percentage::with(75));
+  /// let pos = Position::new(Percentage::with(75.0));
+  /// assert_eq!(pos.value(), Percentage::with(75.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn value(&self) -> Percentage {
@@ -1196,9 +1231,9 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position};
   ///
-  /// let mut pos = Position::new(Percentage::with(10));
-  /// pos.set_value(Percentage::with(90));
-  /// assert_eq!(pos.value(), Percentage::with(90));
+  /// let mut pos = Position::new(Percentage::with(10.0));
+  /// pos.set_value(Percentage::with(90.0));
+  /// assert_eq!(pos.value(), Percentage::with(90.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn set_value(&mut self, value: Percentage) -> &mut Self {
@@ -1211,10 +1246,10 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position, PositionAlign};
   ///
-  /// let pos = Position::new(Percentage::with(50));
+  /// let pos = Position::new(Percentage::with(50.0));
   /// assert_eq!(pos.alignment(), None);
   ///
-  /// let pos = Position::with_alignment(Percentage::with(50), PositionAlign::Center);
+  /// let pos = Position::with_alignment(Percentage::with(50.0), PositionAlign::Center);
   /// assert_eq!(pos.alignment(), Some(PositionAlign::Center));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
@@ -1227,7 +1262,7 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position, PositionAlign};
   ///
-  /// let mut pos = Position::new(Percentage::with(50));
+  /// let mut pos = Position::new(Percentage::with(50.0));
   /// pos.set_alignment(PositionAlign::LineRight);
   /// assert_eq!(pos.alignment(), Some(PositionAlign::LineRight));
   /// ```
@@ -1242,10 +1277,10 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position, PositionAlign};
   ///
-  /// let pos = Position::new(Percentage::with(50)).maybe_alignment(Some(PositionAlign::Center));
+  /// let pos = Position::new(Percentage::with(50.0)).maybe_alignment(Some(PositionAlign::Center));
   /// assert_eq!(pos.alignment(), Some(PositionAlign::Center));
   ///
-  /// let pos = Position::new(Percentage::with(50)).maybe_alignment(None);
+  /// let pos = Position::new(Percentage::with(50.0)).maybe_alignment(None);
   /// assert_eq!(pos.alignment(), None);
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
@@ -1259,7 +1294,7 @@ impl Position {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Position, PositionAlign};
   ///
-  /// let mut pos = Position::new(Percentage::with(50));
+  /// let mut pos = Position::new(Percentage::with(50.0));
   /// pos.update_alignment(Some(PositionAlign::Auto));
   /// assert_eq!(pos.alignment(), Some(PositionAlign::Auto));
   /// pos.update_alignment(None);
@@ -1282,8 +1317,8 @@ impl Size {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Size};
   ///
-  /// let size = Size::new(Percentage::with(80));
-  /// assert_eq!(size.value(), Percentage::with(80));
+  /// let size = Size::new(Percentage::with(80.0));
+  /// assert_eq!(size.value(), Percentage::with(80.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn new(value: Percentage) -> Self {
@@ -1295,8 +1330,8 @@ impl Size {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Size};
   ///
-  /// let size = Size::new(Percentage::with(100));
-  /// assert_eq!(size.value(), Percentage::with(100));
+  /// let size = Size::new(Percentage::with(100.0));
+  /// assert_eq!(size.value(), Percentage::with(100.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn value(&self) -> Percentage {
@@ -1308,9 +1343,9 @@ impl Size {
   /// ```rust
   /// use fasrt::vtt::{Percentage, Size};
   ///
-  /// let mut size = Size::new(Percentage::with(50));
-  /// size.set_value(Percentage::with(75));
-  /// assert_eq!(size.value(), Percentage::with(75));
+  /// let mut size = Size::new(Percentage::with(50.0));
+  /// size.set_value(Percentage::with(75.0));
+  /// assert_eq!(size.value(), Percentage::with(75.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn set_value(&mut self, value: Percentage) -> &mut Self {
@@ -1363,6 +1398,214 @@ impl<'a> RegionId<'a> {
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub const fn as_str(&self) -> &'a str {
     self.0
+  }
+}
+
+/// Scroll direction for a region.
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Hash, IsVariant)]
+pub enum Scroll {
+  /// No scrolling (`scroll:none`).
+  #[display("")]
+  None,
+  /// Scroll up (`scroll:up`).
+  #[display("up")]
+  Up,
+}
+
+impl Default for Scroll {
+  fn default() -> Self {
+    Self::None
+  }
+}
+
+/// An anchor point as a pair of percentages (x, y).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Anchor {
+  x: Percentage,
+  y: Percentage,
+}
+
+impl Anchor {
+  /// Create a new `Anchor` with the given x and y percentages.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn new(x: Percentage, y: Percentage) -> Self {
+    Self { x, y }
+  }
+
+  /// Returns the x percentage.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn x(&self) -> Percentage {
+    self.x
+  }
+
+  /// Returns the y percentage.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn y(&self) -> Percentage {
+    self.y
+  }
+}
+
+/// A parsed WebVTT REGION definition.
+///
+/// Per the W3C spec, a region has an id, width, number of visible lines,
+/// region anchor, viewport anchor, and scroll direction.
+///
+/// ```rust
+/// use fasrt::vtt::{Region, RegionId, Percentage, Anchor, Scroll};
+///
+/// let region = Region::new(RegionId::new("nav"))
+///   .with_width(Percentage::with(40.0))
+///   .with_lines(3)
+///   .with_scroll(Scroll::Up);
+/// assert_eq!(region.id().as_str(), "nav");
+/// assert_eq!(region.width(), Percentage::with(40.0));
+/// assert_eq!(region.lines(), 3);
+/// assert_eq!(region.scroll(), Scroll::Up);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Region<'a> {
+  id: RegionId<'a>,
+  width: Percentage,
+  lines: u32,
+  region_anchor: Anchor,
+  viewport_anchor: Anchor,
+  scroll: Scroll,
+}
+
+impl Default for Region<'_> {
+  fn default() -> Self {
+    Self {
+      id: RegionId::new(""),
+      width: Percentage::with(100.0),
+      lines: 3,
+      region_anchor: Anchor::new(Percentage::new(), Percentage::with(100.0)),
+      viewport_anchor: Anchor::new(Percentage::new(), Percentage::with(100.0)),
+      scroll: Scroll::None,
+    }
+  }
+}
+
+impl<'a> Region<'a> {
+  /// Create a new `Region` with the given id and default settings.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn new(id: RegionId<'a>) -> Self {
+    Self {
+      id,
+      ..Default::default()
+    }
+  }
+
+  /// Returns the region identifier.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn id(&self) -> RegionId<'a> {
+    self.id
+  }
+
+  /// Sets the region identifier.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_id(&mut self, id: RegionId<'a>) -> &mut Self {
+    self.id = id;
+    self
+  }
+
+  /// Returns the region width.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn width(&self) -> Percentage {
+    self.width
+  }
+
+  /// Sets the region width (builder pattern).
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_width(mut self, width: Percentage) -> Self {
+    self.width = width;
+    self
+  }
+
+  /// Sets the region width.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_width(&mut self, width: Percentage) -> &mut Self {
+    self.width = width;
+    self
+  }
+
+  /// Returns the number of visible lines.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn lines(&self) -> u32 {
+    self.lines
+  }
+
+  /// Sets the number of visible lines (builder pattern).
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_lines(mut self, lines: u32) -> Self {
+    self.lines = lines;
+    self
+  }
+
+  /// Sets the number of visible lines.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_lines(&mut self, lines: u32) -> &mut Self {
+    self.lines = lines;
+    self
+  }
+
+  /// Returns the region anchor.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn region_anchor(&self) -> Anchor {
+    self.region_anchor
+  }
+
+  /// Sets the region anchor (builder pattern).
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_region_anchor(mut self, anchor: Anchor) -> Self {
+    self.region_anchor = anchor;
+    self
+  }
+
+  /// Sets the region anchor.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_region_anchor(&mut self, anchor: Anchor) -> &mut Self {
+    self.region_anchor = anchor;
+    self
+  }
+
+  /// Returns the viewport anchor.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn viewport_anchor(&self) -> Anchor {
+    self.viewport_anchor
+  }
+
+  /// Sets the viewport anchor (builder pattern).
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn with_viewport_anchor(mut self, anchor: Anchor) -> Self {
+    self.viewport_anchor = anchor;
+    self
+  }
+
+  /// Sets the viewport anchor.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_viewport_anchor(&mut self, anchor: Anchor) -> &mut Self {
+    self.viewport_anchor = anchor;
+    self
+  }
+
+  /// Returns the scroll direction.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn scroll(&self) -> Scroll {
+    self.scroll
+  }
+
+  /// Sets the scroll direction (builder pattern).
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub const fn with_scroll(mut self, scroll: Scroll) -> Self {
+    self.scroll = scroll;
+    self
+  }
+
+  /// Sets the scroll direction.
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  pub fn set_scroll(&mut self, scroll: Scroll) -> &mut Self {
+    self.scroll = scroll;
+    self
   }
 }
 
@@ -1578,8 +1821,8 @@ impl<'a> Header<'a> {
   /// use fasrt::vtt::{Header, Timestamp, CueOptions, Percentage, Size};
   ///
   /// let header = Header::new(Timestamp::new(), Timestamp::new())
-  ///   .with_settings(CueOptions::default().with_size(Size::new(Percentage::with(80))));
-  /// assert_eq!(header.settings().unwrap().size().unwrap().value(), Percentage::with(80));
+  ///   .with_settings(CueOptions::default().with_size(Size::new(Percentage::with(80.0))));
+  /// assert_eq!(header.settings().unwrap().size().unwrap().value(), Percentage::with(80.0));
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
   pub fn with_settings(mut self, settings: CueOptions<'a>) -> Self {
@@ -1627,7 +1870,7 @@ impl<'a> Header<'a> {
   /// use fasrt::vtt::{Header, Timestamp, CueOptions, Percentage, Size};
   ///
   /// let mut header = Header::new(Timestamp::new(), Timestamp::new());
-  /// header.update_settings(Some(CueOptions::default().with_size(Size::new(Percentage::with(50)))));
+  /// header.update_settings(Some(CueOptions::default().with_size(Size::new(Percentage::with(50.0)))));
   /// assert!(header.settings().is_some());
   /// header.update_settings(None);
   /// assert!(header.settings().is_none());
@@ -1651,5 +1894,5 @@ pub enum Block<'a, T> {
   /// A STYLE block (CSS).
   Style(T),
   /// A REGION definition block.
-  Region(T),
+  Region(Region<'a>),
 }

@@ -3,11 +3,14 @@ use logos::{Lexer, Logos};
 use crate::{error::*, types::Millisecond};
 
 pub use types::{
-  Align, Block, Cue, CueId, CueOptions, Header, Hour, Line, LineAlign, LineValue, Percentage,
-  Position, PositionAlign, RegionId, Size, Timestamp, Vertical,
+  Align, Anchor, Block, Cue, CueId, CueOptions, Header, Hour, Line, LineAlign, LineValue,
+  Percentage, Position, PositionAlign, Region, RegionId, Scroll, Size, Timestamp, Vertical,
 };
 
 mod types;
+
+/// Cue text parsing (tags, entities, timestamps).
+pub mod cue_text;
 
 /// The error type for parsing WebVTT files.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -99,7 +102,7 @@ fn split_arrow(s: &str) -> Result<(&str, &str), ParseVttError> {
 /// Parse a timestamp in either long form `HH:MM:SS.mmm` or short form
 /// `MM:SS.mmm`. Auto-detects by counting `:` separators.
 #[inline]
-fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
+pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
   let (time, ms) = s
     .split_once('.')
     .ok_or(ParseVttError::InvalidTimestamp("missing '.'"))?;
@@ -257,11 +260,11 @@ fn parse_cue_settings<'a>(s: &'a str) -> CueOptions<'a> {
   settings
 }
 
-/// Parse a percentage value like "50%".
+/// Parse a percentage value like "50%" or "50.5%".
 #[cfg_attr(not(tarpaulin), inline(always))]
 fn parse_percentage(s: &str) -> Option<Percentage> {
   let s = s.strip_suffix('%')?;
-  let n: u8 = s.parse().ok()?;
+  let n: f64 = s.parse().ok()?;
   Percentage::try_with(n)
 }
 
@@ -273,6 +276,68 @@ fn parse_line_value(s: &str) -> Option<LineValue> {
   } else {
     s.parse().ok().map(LineValue::Number)
   }
+}
+
+/// Parse an anchor value like "50%,100%".
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn parse_anchor(s: &str) -> Option<Anchor> {
+  let (x_str, y_str) = s.split_once(',')?;
+  let x = parse_percentage(x_str)?;
+  let y = parse_percentage(y_str)?;
+  Some(Anchor::new(x, y))
+}
+
+/// Parse REGION block settings from the body text.
+fn parse_region_settings<'a>(body: &'a str) -> Region<'a> {
+  let mut region = Region::default();
+
+  for line in body.lines() {
+    let line = line.trim();
+    if line.is_empty() {
+      continue;
+    }
+    let Some((key, value)) = line.split_once(':') else {
+      continue;
+    };
+    if value.is_empty() {
+      continue;
+    }
+    match key {
+      "id" => {
+        if !value.contains("-->") {
+          region.set_id(RegionId::new(value));
+        }
+      }
+      "width" => {
+        if let Some(pct) = parse_percentage(value) {
+          region.set_width(pct);
+        }
+      }
+      "lines" => {
+        if let Ok(n) = value.parse::<u32>() {
+          region.set_lines(n);
+        }
+      }
+      "regionanchor" => {
+        if let Some(anchor) = parse_anchor(value) {
+          region.set_region_anchor(anchor);
+        }
+      }
+      "viewportanchor" => {
+        if let Some(anchor) = parse_anchor(value) {
+          region.set_viewport_anchor(anchor);
+        }
+      }
+      "scroll" => {
+        if value == "up" {
+          region.set_scroll(Scroll::Up);
+        }
+      }
+      _ => {}
+    }
+  }
+
+  region
 }
 
 /// Format cue settings to a string for writing.
@@ -311,6 +376,34 @@ fn format_cue_settings(settings: &CueOptions<'_>, buf: &mut std::vec::Vec<u8>) {
   if let Some(region) = settings.region() {
     let _ = write!(buf, " region:{region}");
   }
+}
+
+/// Format a region definition for writing.
+#[cfg(feature = "std")]
+fn format_region<W: std::io::Write>(region: &Region<'_>, w: &mut W) -> std::io::Result<()> {
+  let id = region.id().as_str();
+  if !id.is_empty() {
+    writeln!(w, "id:{id}")?;
+  }
+  let default = Region::default();
+  if region.width() != default.width() {
+    writeln!(w, "width:{}%", region.width())?;
+  }
+  if region.lines() != default.lines() {
+    writeln!(w, "lines:{}", region.lines())?;
+  }
+  if region.region_anchor() != default.region_anchor() {
+    let a = region.region_anchor();
+    writeln!(w, "regionanchor:{}%,{}%", a.x(), a.y())?;
+  }
+  if region.viewport_anchor() != default.viewport_anchor() {
+    let a = region.viewport_anchor();
+    writeln!(w, "viewportanchor:{}%,{}%", a.x(), a.y())?;
+  }
+  if region.scroll() != default.scroll() {
+    writeln!(w, "scroll:{}", region.scroll())?;
+  }
+  Ok(())
 }
 
 /// State machine states for the WebVTT parser.
@@ -671,14 +764,16 @@ impl<'a> Iterator for Parser<'a> {
         State::RegionBody(ref mut start, ref mut end) => {
           let Some(line) = self.lines.next() else {
             let body_text = body_slice(self.input, *start, *end);
+            let region = parse_region_settings(body_text);
             self.state = State::Done;
-            return Some(Ok(Block::Region(body_text)));
+            return Some(Ok(Block::Region(region)));
           };
 
           if line.is_empty() {
             let body_text = body_slice(self.input, *start, *end);
+            let region = parse_region_settings(body_text);
             self.state = State::BlockStart;
-            return Some(Ok(Block::Region(body_text)));
+            return Some(Ok(Block::Region(region)));
           }
 
           let line_offset = line.as_ptr() as usize - self.input.as_ptr() as usize;
@@ -827,13 +922,9 @@ const _: () = {
             self.inner.write_all(b"\n")?;
           }
         }
-        Block::Region(text) => {
+        Block::Region(region) => {
           self.inner.write_all(b"REGION\n")?;
-          let text = text.as_ref();
-          if !text.is_empty() {
-            self.inner.write_all(text.as_bytes())?;
-            self.inner.write_all(b"\n")?;
-          }
+          format_region(region, &mut self.inner)?;
         }
       }
 

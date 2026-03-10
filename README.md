@@ -50,10 +50,10 @@ fasrt = "0.1"
 - [x] BOM handling
 - [x] Error recovery (`-->` in cue body, malformed timing lines)
 - [x] Writer with round-trip fidelity (`std` feature)
-- [ ] Cue text parsing (tags, entities, tree building)
+- [x] Cue text parsing (tags, entities, tree building)
 - [ ] NULL (U+0000) preprocessing
-- [ ] Float percentages
-- [ ] Full REGION definition parsing
+- [x] Float percentages (e.g., `50.5%`)
+- [x] Full REGION definition parsing (id, width, lines, regionanchor, viewportanchor, scroll)
 
 #### License
 
