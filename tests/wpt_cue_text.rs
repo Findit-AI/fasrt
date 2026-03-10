@@ -7,7 +7,7 @@
 
 #![cfg(feature = "std")]
 
-use fasrt::vtt::cue_text::{CueText, Node, Tag};
+use fasrt::vtt::cue::{CueText, Node, Tag};
 use fasrt::vtt::{Block, Parser};
 use serde::Deserialize;
 
@@ -155,26 +155,26 @@ fn run_wpt_suite(json_name: &str, vtt_name: &str) {
 // ── Individual test suites ─────────────────────────────────────────────────
 
 #[test]
-fn wpt_cue_text_text() {
+fn wpt_cue_text() {
   run_wpt_suite("text.json", "text.vtt");
 }
 
 #[test]
-fn wpt_cue_text_tags() {
+fn wpt_cue_tags() {
   run_wpt_suite("tags.json", "tags.vtt");
 }
 
 #[test]
-fn wpt_cue_text_entities() {
+fn wpt_cue_entities() {
   run_wpt_suite("entities.json", "entities.vtt");
 }
 
 #[test]
-fn wpt_cue_text_timestamps() {
+fn wpt_cue_timestamps() {
   run_wpt_suite("timestamps.json", "timestamps.vtt");
 }
 
 #[test]
-fn wpt_cue_text_tree_building() {
+fn wpt_cue_tree_building() {
   run_wpt_suite("tree-building.json", "tree-building.vtt");
 }

@@ -1,6 +1,6 @@
 #![cfg(any(feature = "alloc", feature = "std"))]
 
-use fasrt::vtt::cue_text::{CueParser, CueStr, CueText, CueToken, Node, Tag};
+use fasrt::vtt::cue::{CueParser, CueStr, CueText, CueToken, Node, Tag};
 
 // ── CueParser (token iterator) tests ────────────────────────────────────────
 
