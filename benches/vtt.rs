@@ -43,8 +43,7 @@ fn load_all_vtt_fixtures() -> String {
     "fixtures/webvtt/wpt-file-parsing",
     "fixtures/webvtt/wpt-cue-parsing",
   ] {
-    let entries = std::fs::read_dir(dir)
-      .expect("failed to read VTT fixture directory");
+    let entries = std::fs::read_dir(dir).expect("failed to read VTT fixture directory");
     for entry in entries {
       let entry = entry.unwrap();
       if entry.path().extension().is_some_and(|e| e == "vtt") {
