@@ -43,16 +43,20 @@ fn load_all_vtt_fixtures() -> String {
     "fixtures/webvtt/wpt-file-parsing",
     "fixtures/webvtt/wpt-cue-parsing",
   ] {
-    if let Ok(entries) = std::fs::read_dir(dir) {
-      for entry in entries {
-        let entry = entry.unwrap();
-        if entry.path().extension().is_some_and(|e| e == "vtt") {
-          buf.push_str(&std::fs::read_to_string(entry.path()).unwrap());
-          buf.push_str("\n\n");
-        }
+    let entries = std::fs::read_dir(dir)
+      .expect("failed to read VTT fixture directory");
+    for entry in entries {
+      let entry = entry.unwrap();
+      if entry.path().extension().is_some_and(|e| e == "vtt") {
+        buf.push_str(&std::fs::read_to_string(entry.path()).unwrap());
+        buf.push_str("\n\n");
       }
     }
   }
+  assert!(
+    !buf.is_empty(),
+    "No VTT fixtures were loaded from fixtures/webvtt"
+  );
   buf
 }
 
