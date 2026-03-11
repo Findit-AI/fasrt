@@ -126,9 +126,16 @@ pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
   if b[len - 4] != b'.' || b[len - 7] != b':' {
     return Err(ParseVttError::InvalidTimestamp("invalid format"));
   }
-  let millis = Millisecond(vtt_digit3(&b[len - 3..]));
-  let seconds = Second(vtt_digit2(&b[len - 6..len - 4]));
-  let minutes = Minute(vtt_digit2(&b[len - 9..len - 7]));
+  let millis_val = vtt_digit3(&b[len - 3..]);
+  let seconds_val = vtt_digit2(&b[len - 6..len - 4]);
+  let minutes_val = vtt_digit2(&b[len - 9..len - 7]);
+  // Validate ranges — needed for cue-text path where input is not regex-validated.
+  if seconds_val >= 60 || minutes_val >= 60 {
+    return Err(ParseVttError::InvalidTimestamp("out of range"));
+  }
+  let millis = Millisecond(millis_val);
+  let seconds = Second(seconds_val);
+  let minutes = Minute(minutes_val);
   let hours = if len > 9 {
     if b[len - 10] != b':' {
       return Err(ParseVttError::InvalidTimestamp("invalid format"));

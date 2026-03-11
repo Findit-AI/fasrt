@@ -294,7 +294,7 @@ impl Default for Options {
 enum Token {
   /// Header "HH:MM:SS,mmm --> HH:MM:SS,mmm"
   #[regex(
-    r"[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}",
+    r"[0-9]{2,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-9]{2,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}",
     parse_header
   )]
   Header(Header),
@@ -347,7 +347,6 @@ fn parse_timestamp_bytes(b: &[u8]) -> Result<Timestamp, ParseSrtError> {
   let minutes = Minute(digit2(&b[len - 9..len - 7]));
   let hour_len = len - 10;
   let hours = match hour_len {
-    1 => Hour((b[0] - b'0') as u16),
     2 => Hour(digit2(&b[..2]) as u16),
     3 => Hour(digit3(&b[..3])),
     _ => return Err(ParseHourError::NotPadded.into()),
