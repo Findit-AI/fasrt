@@ -21,6 +21,9 @@ fn load_all_fixtures() -> String {
     let entry = entry.unwrap();
     if entry.path().extension().is_some_and(|e| e == "srt") {
       if let Ok(content) = std::fs::read_to_string(entry.path()) {
+        if !buf.is_empty() {
+          buf.push_str("\n\n");
+        }
         buf.push_str(&content);
       }
     }

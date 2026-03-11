@@ -120,14 +120,19 @@ pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
   if len < 9 {
     return Err(ParseVttError::InvalidTimestamp("too short"));
   }
+  // Validate expected separators before doing byte arithmetic.
+  // This guards against malformed input from cue-text parsing where
+  // the regex only loosely validates the format.
+  if b[len - 4] != b'.' || b[len - 7] != b':' {
+    return Err(ParseVttError::InvalidTimestamp("invalid format"));
+  }
   let millis = Millisecond(vtt_digit3(&b[len - 3..]));
-  // b[len-4] == b'.'
   let seconds = Second(vtt_digit2(&b[len - 6..len - 4]));
-  // b[len-7] == b':'
   let minutes = Minute(vtt_digit2(&b[len - 9..len - 7]));
   let hours = if len > 9 {
-    // Long form: has hours before the second ':'
-    // b[len-10] == b':'
+    if b[len - 10] != b':' {
+      return Err(ParseVttError::InvalidTimestamp("invalid format"));
+    }
     let hour_str = &s[..len - 10];
     // VTT hours are unbounded u64; parse the variable-length prefix
     parse_vtt_hour_bytes(hour_str.as_bytes())
@@ -139,11 +144,20 @@ pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
 }
 
 /// Parse VTT hour bytes (variable-length, unbounded u64).
+///
+/// Uses checked arithmetic to prevent overflow on extremely large
+/// hour values from untrusted input.
 #[cfg_attr(not(tarpaulin), inline(always))]
 fn parse_vtt_hour_bytes(b: &[u8]) -> Result<Hour, ParseHourError> {
   let mut val: u64 = 0;
   for &byte in b {
-    val = val * 10 + (byte - b'0') as u64;
+    if !byte.is_ascii_digit() {
+      return Err(ParseHourError::NotPadded);
+    }
+    val = val
+      .checked_mul(10)
+      .and_then(|v| v.checked_add((byte - b'0') as u64))
+      .ok_or(ParseHourError::NotPadded)?;
   }
   Ok(Hour(val))
 }

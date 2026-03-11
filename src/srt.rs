@@ -347,6 +347,7 @@ fn parse_timestamp_bytes(b: &[u8]) -> Result<Timestamp, ParseSrtError> {
   let minutes = Minute(digit2(&b[len - 9..len - 7]));
   let hour_len = len - 10;
   let hours = match hour_len {
+    1 => Hour((b[0] - b'0') as u16),
     2 => Hour(digit2(&b[..2]) as u16),
     3 => Hour(digit3(&b[..3])),
     _ => return Err(ParseHourError::NotPadded.into()),
