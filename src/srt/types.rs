@@ -104,6 +104,22 @@ pub struct Timestamp {
   seconds: Second,
 }
 
+impl TryFrom<Duration> for Timestamp {
+  type Error = ParseHourError;
+
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  fn try_from(value: Duration) -> Result<Self, Self::Error> {
+    match Timestamp::try_from_duration(value) {
+      None => {
+        let total_millis = value.as_millis() as u64;
+        let hours = total_millis / 3_600_000;
+        Err(ParseHourError::Overflow(hours as u16))
+      }
+      Some(ts) => Ok(ts),
+    }
+  }
+}
+
 impl Default for Timestamp {
   /// ```rust
   /// use fasrt::srt::Timestamp;
@@ -353,7 +369,7 @@ impl Timestamp {
   /// use fasrt::types::{Minute, Second, Millisecond};
   ///
   /// let dur = Duration::from_millis(1 * 3_600_000 + 2 * 60_000 + 3 * 1_000 + 4);
-  /// let ts = Timestamp::from_duration(dur).unwrap();
+  /// let ts = Timestamp::try_from(dur).unwrap();
   /// assert_eq!(ts.hours(), Hour::with(1));
   /// assert_eq!(ts.minutes(), Minute::with(2));
   /// assert_eq!(ts.seconds(), Second::with(3));
@@ -364,10 +380,10 @@ impl Timestamp {
   ///
   /// // Returns None when hours exceed 999
   /// let too_large = Duration::from_millis(1000 * 3_600_000);
-  /// assert!(Timestamp::from_duration(too_large).is_none());
+  /// assert!(Timestamp::try_from(too_large).is_err());
   /// ```
   #[cfg_attr(not(tarpaulin), inline(always))]
-  pub const fn from_duration(dur: Duration) -> Option<Self> {
+  pub const fn try_from_duration(dur: Duration) -> Option<Self> {
     let total_millis = dur.as_millis() as u64;
     let hours = total_millis / 3_600_000;
     if hours > 999 {

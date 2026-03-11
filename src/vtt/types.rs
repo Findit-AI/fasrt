@@ -119,6 +119,13 @@ pub struct Timestamp {
   seconds: Second,
 }
 
+impl From<Duration> for Timestamp {
+  #[cfg_attr(not(tarpaulin), inline(always))]
+  fn from(value: Duration) -> Self {
+    Timestamp::from_duration(value)
+  }
+}
+
 impl Default for Timestamp {
   /// ```rust
   /// use fasrt::vtt::{Timestamp, Hour};
@@ -286,7 +293,7 @@ impl Timestamp {
   /// use fasrt::types::{Minute, Second, Millisecond};
   ///
   /// let dur = Duration::from_millis(1 * 3_600_000 + 2 * 60_000 + 3 * 1_000 + 4);
-  /// let ts = Timestamp::from_duration(dur);
+  /// let ts = Timestamp::from(dur);
   /// assert_eq!(ts.hours(), Hour::with(1));
   /// assert_eq!(ts.minutes(), Minute::with(2));
   /// assert_eq!(ts.seconds(), Second::with(3));
