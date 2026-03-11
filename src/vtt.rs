@@ -129,13 +129,14 @@ pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
   let millis_val = vtt_digit3(&b[len - 3..]);
   let seconds_val = vtt_digit2(&b[len - 6..len - 4]);
   let minutes_val = vtt_digit2(&b[len - 9..len - 7]);
-  // Validate ranges — needed for cue-text path where input is not regex-validated.
-  if seconds_val >= 60 || minutes_val >= 60 {
-    return Err(ParseVttError::InvalidTimestamp("out of range"));
-  }
-  let millis = Millisecond(millis_val);
-  let seconds = Second(seconds_val);
-  let minutes = Minute(minutes_val);
+  // Use try_with to validate ranges — needed for cue-text path where input
+  // is not regex-validated.
+  let millis = Millisecond::try_with(millis_val)
+    .ok_or(ParseVttError::InvalidTimestamp("milliseconds out of range"))?;
+  let seconds =
+    Second::try_with(seconds_val).ok_or(ParseVttError::InvalidTimestamp("seconds out of range"))?;
+  let minutes =
+    Minute::try_with(minutes_val).ok_or(ParseVttError::InvalidTimestamp("minutes out of range"))?;
   let hours = if len > 9 {
     if b[len - 10] != b':' {
       return Err(ParseVttError::InvalidTimestamp("invalid format"));
@@ -164,7 +165,7 @@ fn parse_vtt_hour_bytes(b: &[u8]) -> Result<Hour, ParseHourError> {
     val = val
       .checked_mul(10)
       .and_then(|v| v.checked_add((byte - b'0') as u64))
-      .ok_or(ParseHourError::NotPadded)?;
+      .ok_or(ParseHourError::HourOverflow)?;
   }
   Ok(Hour(val))
 }
@@ -1297,9 +1298,9 @@ impl<'a> Iterator for Lines<'a> {
 
     let bytes = &self.input.as_bytes()[self.pos..];
 
-    #[cfg(feature = "memchr")]
+    #[cfg(all(feature = "memchr", miri))]
     let found = memchr::memchr2(b'\n', b'\r', bytes);
-    #[cfg(not(feature = "memchr"))]
+    #[cfg(not(all(feature = "memchr", miri)))]
     let found = bytes.iter().position(|&b| b == b'\n' || b == b'\r');
 
     match found {

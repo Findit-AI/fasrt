@@ -50,6 +50,11 @@ pub enum ParseHourError {
   /// The hour component is out of range (not between 0-999).
   #[error("hour component must be between 0-999, but was {0}")]
   Overflow(u16),
+  /// The hour component overflowed u64 (VTT unbounded hours).
+  #[error("hour component overflowed")]
+  #[unwrap(ignore)]
+  #[try_unwrap(ignore)]
+  HourOverflow,
   /// Not a valid number.
   #[error(transparent)]
   ParseInt(#[from] ParseIntError),
