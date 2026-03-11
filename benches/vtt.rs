@@ -2,6 +2,7 @@ use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use fasrt::vtt::Parser;
+use fasrt::vtt::cue::CueParser;
 
 const SMALL_VTT: &str = "\
 WEBVTT
@@ -110,5 +111,60 @@ fn bench_vtt_collect(c: &mut Criterion) {
   group.finish();
 }
 
-criterion_group!(benches, bench_vtt_parse, bench_vtt_collect);
+/// Cue text with many timestamp tags to benchmark the cue-text parsing path.
+fn build_cue_text_with_timestamps() -> String {
+  let mut s = String::new();
+  for i in 0..500 {
+    let h = i / 3600;
+    let m = (i % 3600) / 60;
+    let sec = i % 60;
+    s.push_str(&format!(
+      "word <{h:02}:{m:02}:{sec:02}.{ms:03}>text",
+      h = h,
+      m = m,
+      sec = sec,
+      ms = (i * 7) % 1000
+    ));
+  }
+  s
+}
+
+/// Cue text with tags but no timestamps.
+const CUE_TEXT_TAGS: &str = "\
+<b>bold <i>bold-italic</i></b> plain <u>underline</u> \
+<v Roger>voice</v> <lang en>english</lang> <ruby>base<rt>ruby</rt></ruby> \
+<c.highlight.big>classed</c> &amp; &lt; &gt; &nbsp; end";
+
+fn bench_vtt_cue_text(c: &mut Criterion) {
+  let ts_input = build_cue_text_with_timestamps();
+
+  let mut group = c.benchmark_group("vtt/cue_text");
+
+  // Tags only (no timestamps)
+  group.throughput(Throughput::Bytes(CUE_TEXT_TAGS.len() as u64));
+  group.bench_function("tags_only", |b| {
+    b.iter(|| {
+      let count = CueParser::new(black_box(CUE_TEXT_TAGS)).count();
+      black_box(count);
+    });
+  });
+
+  // Timestamp-heavy cue text
+  group.throughput(Throughput::Bytes(ts_input.len() as u64));
+  group.bench_function("500_timestamps", |b| {
+    b.iter(|| {
+      let count = CueParser::new(black_box(&ts_input)).count();
+      black_box(count);
+    });
+  });
+
+  group.finish();
+}
+
+criterion_group!(
+  benches,
+  bench_vtt_parse,
+  bench_vtt_collect,
+  bench_vtt_cue_text
+);
 criterion_main!(benches);

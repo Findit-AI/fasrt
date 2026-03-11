@@ -749,9 +749,9 @@ impl<'a> Iterator for Lines<'a> {
 
     let bytes = &self.input.as_bytes()[self.pos..];
 
-    #[cfg(feature = "memchr")]
+    #[cfg(all(feature = "memchr", not(miri)))]
     let found = memchr::memchr(b'\n', bytes);
-    #[cfg(not(feature = "memchr"))]
+    #[cfg(not(all(feature = "memchr", not(miri))))]
     let found = bytes.iter().position(|&b| b == b'\n');
 
     let line_end = found
