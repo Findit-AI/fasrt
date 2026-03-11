@@ -18,6 +18,11 @@ path = "benches/srt.rs"
 name = "srt"
 harness = false
 
+[[bench]]
+path = "benches/vtt.rs"
+name = "vtt"
+harness = false
+
 [features]
 default = ["std"]
 alloc = ["memchr"]

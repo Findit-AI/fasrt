@@ -1,6 +1,9 @@
 use logos::{Lexer, Logos};
 
-use crate::{error::*, types::Millisecond};
+use crate::{
+  error::*,
+  types::{Millisecond, Minute, Second},
+};
 
 pub use types::{
   Align, Anchor, Block, Cue, CueId, CueOptions, Header, Hour, Line, LineAlign, LineValue,
@@ -104,36 +107,55 @@ fn split_arrow(s: &str) -> Result<(&str, &str), ParseVttError> {
 }
 
 /// Parse a timestamp in either long form `HH:MM:SS.mmm` or short form
-/// `MM:SS.mmm`. Auto-detects by counting `:` separators.
+/// `MM:SS.mmm` using direct byte extraction.
+///
+/// The logos regex guarantees the format, so we can extract fields by
+/// fixed offsets from the end: `mmm`(3) `.`(1) `SS`(2) `:`(1) `MM`(2)
+/// = 9 fixed bytes. If there's a `:`(1) before that, everything before
+/// it is the hours component.
 #[inline]
 pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
-  let (time, ms) = s
-    .split_once('.')
-    .ok_or(ParseVttError::InvalidTimestamp("missing '.'"))?;
-  let millis: Millisecond = ms.parse()?;
-  let mut parts = time.splitn(3, ':');
-  let first = parts
-    .next()
-    .ok_or(ParseVttError::InvalidTimestamp("empty timestamp"))?;
-  let second = parts.next().ok_or(ParseVttError::InvalidTimestamp(
-    "missing minutes or seconds",
-  ))?;
-  match parts.next() {
-    // Long form: HH:MM:SS
-    Some(sec_str) => Ok(Timestamp::from_hmsm(
-      first.parse()?,
-      second.parse()?,
-      sec_str.parse()?,
-      millis,
-    )),
-    // Short form: MM:SS
-    None => Ok(Timestamp::from_hmsm(
-      Hour::new(),
-      first.parse()?,
-      second.parse()?,
-      millis,
-    )),
+  let b = s.as_bytes();
+  let len = b.len();
+  if len < 9 {
+    return Err(ParseVttError::InvalidTimestamp("too short"));
   }
+  let millis = Millisecond(vtt_digit3(&b[len - 3..]));
+  // b[len-4] == b'.'
+  let seconds = Second(vtt_digit2(&b[len - 6..len - 4]));
+  // b[len-7] == b':'
+  let minutes = Minute(vtt_digit2(&b[len - 9..len - 7]));
+  let hours = if len > 9 {
+    // Long form: has hours before the second ':'
+    // b[len-10] == b':'
+    let hour_str = &s[..len - 10];
+    // VTT hours are unbounded u64; parse the variable-length prefix
+    parse_vtt_hour_bytes(hour_str.as_bytes())
+      .map_err(|_| ParseVttError::InvalidTimestamp("invalid hours"))?
+  } else {
+    Hour::new()
+  };
+  Ok(Timestamp::from_hmsm(hours, minutes, seconds, millis))
+}
+
+/// Parse VTT hour bytes (variable-length, unbounded u64).
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn parse_vtt_hour_bytes(b: &[u8]) -> Result<Hour, ParseHourError> {
+  let mut val: u64 = 0;
+  for &byte in b {
+    val = val * 10 + (byte - b'0') as u64;
+  }
+  Ok(Hour(val))
+}
+
+#[cfg_attr(not(tarpaulin), inline(always))]
+const fn vtt_digit2(b: &[u8]) -> u8 {
+  (b[0] - b'0') * 10 + (b[1] - b'0')
+}
+
+#[cfg_attr(not(tarpaulin), inline(always))]
+const fn vtt_digit3(b: &[u8]) -> u16 {
+  (b[0] - b'0') as u16 * 100 + (b[1] - b'0') as u16 * 10 + (b[2] - b'0') as u16
 }
 
 /// Lex the next token from a line. Returns `Ok(None)` when the line
@@ -1253,28 +1275,27 @@ impl<'a> Iterator for Lines<'a> {
     }
 
     let bytes = &self.input.as_bytes()[self.pos..];
-    let mut i = 0;
-    while i < bytes.len() {
-      if bytes[i] == b'\n' {
+
+    #[cfg(feature = "memchr")]
+    let found = memchr::memchr2(b'\n', b'\r', bytes);
+    #[cfg(not(feature = "memchr"))]
+    let found = bytes.iter().position(|&b| b == b'\n' || b == b'\r');
+
+    match found {
+      Some(i) => {
         let line = &self.input[self.pos..self.pos + i];
-        self.pos += i + 1;
-        return Some(line);
-      } else if bytes[i] == b'\r' {
-        let line = &self.input[self.pos..self.pos + i];
-        // Check for CRLF
-        if i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
+        if bytes[i] == b'\r' && i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
           self.pos += i + 2;
         } else {
           self.pos += i + 1;
         }
-        return Some(line);
+        Some(line)
       }
-      i += 1;
+      None => {
+        let line = &self.input[self.pos..];
+        self.pos = self.input.len();
+        Some(line)
+      }
     }
-
-    // No line terminator found - rest of input
-    let line = &self.input[self.pos..];
-    self.pos = self.input.len();
-    Some(line)
   }
 }

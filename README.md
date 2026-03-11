@@ -70,6 +70,34 @@ fasrt = "0.2"
 | `alloc`  | No      | Enables `CueText` DOM tree and entity decoding without `std` |
 | `memchr` | Yes (via `alloc`/`std`) | SIMD-accelerated fast path for entity decoding |
 
+## Benchmarks
+
+Measured on Apple Silicon with `cargo bench` (Criterion).
+
+### SRT
+
+| Benchmark | Input | Time | Throughput |
+|-----------|-------|------|------------|
+| Parse (strict) | 2 cues, 89 B | ~316 ns | 281 MiB/s |
+| Parse (strict) | 26 KB file | ~39 µs | 645 MiB/s |
+| Parse (lossy) | 332 files, ~8 MB | ~12.5 ms | 624 MiB/s |
+| Collect into `Vec` | 26 KB file | ~41 µs | 606 MiB/s |
+
+### WebVTT
+
+| Benchmark | Input | Time | Throughput |
+|-----------|-------|------|------------|
+| Parse | 2 cues, 96 B | ~299 ns | 309 MiB/s |
+| Parse | Settings + region + style, 354 B | ~829 ns | 427 MiB/s |
+| Parse | All WPT fixtures, ~34 KB | ~103 µs | 342 MiB/s |
+| Collect into `Vec` | Settings + region + style, 354 B | ~1.08 µs | 329 MiB/s |
+
+Run benchmarks yourself:
+
+```sh
+cargo bench
+```
+
 #### License
 
 `fasrt` is under the terms of both the MIT license and the
