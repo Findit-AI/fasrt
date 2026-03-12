@@ -95,8 +95,9 @@ enum RawCueToken<'a> {
   StartLang(&'a str),
 
   // ── timestamp tag ─────────────────────────────────────────────────────
-  /// `<[digits/colons].[3 digits]>` — validated by `parse_timestamp` later.
-  #[regex(r"<[0-9:]+\.[0-9]{3}>")]
+  /// `<HH:MM:SS.mmm>` or `<MM:SS.mmm>` — fully validated by the DFA so
+  /// the fast unchecked `parse_timestamp` can be used directly.
+  #[regex(r"<(?:[0-9]+:)?[0-5][0-9]:[0-5][0-9]\.[0-9]{3}>")]
   Timestamp(&'a str),
 
   // ── fallbacks (skipped by the iterator) ───────────────────────────────
@@ -574,6 +575,7 @@ impl<'a> Iterator for CueParser<'a> {
         // ── timestamp ──
         Ok(RawCueToken::Timestamp(s)) => {
           let content = &s[1..s.len() - 1]; // strip `<` and `>`
+          // Regex already validates format; use unchecked fast path.
           if let Ok(ts) = super::parse_timestamp(content) {
             return Some(CueToken::Timestamp(ts));
           }
@@ -608,7 +610,7 @@ fn try_parse_unterminated<'a>(slice: &'a str) -> Option<CueToken<'a>> {
 
   // Try timestamp: digits/colons + "." + 3 digits
   if inner.as_bytes()[0].is_ascii_digit() {
-    if let Ok(ts) = super::parse_timestamp(inner) {
+    if let Ok(ts) = super::parse_timestamp_cue(inner) {
       return Some(CueToken::Timestamp(ts));
     }
     return None;

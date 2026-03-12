@@ -374,3 +374,93 @@ impl CueTokenExt for CueToken<'_> {
     }
   }
 }
+
+// ── Malformed timestamp rejection tests ──────────────────────────────────────
+//
+// These verify that malformed cue-text timestamp tags are safely rejected
+// (treated as unknown tags or skipped) without panicking, even in debug builds.
+
+/// Colons where digits are expected: `<:::.000>` matches the old loose regex
+/// but is rejected by the tightened DFA.
+#[test]
+fn cue_text_rejects_colons_as_digits() {
+  let tokens: Vec<_> = CueParser::new("<:::.000>").collect();
+  assert!(
+    !tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "colons-only should not parse as timestamp"
+  );
+}
+
+/// Minutes out of range: `<99:99.000>` — rejected by the DFA (`[0-5][0-9]`).
+#[test]
+fn cue_text_rejects_out_of_range_minutes() {
+  let tokens: Vec<_> = CueParser::new("<99:99.000>").collect();
+  assert!(
+    !tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "99:99 should not parse as timestamp"
+  );
+}
+
+/// Seconds out of range: `<00:60.000>` — rejected by the DFA.
+#[test]
+fn cue_text_rejects_out_of_range_seconds() {
+  let tokens: Vec<_> = CueParser::new("<00:60.000>").collect();
+  assert!(
+    !tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "60 seconds should not parse as timestamp"
+  );
+}
+
+/// Non-digit bytes in hour position: `<ab:00:00.000>`.
+#[test]
+fn cue_text_rejects_non_digit_hours() {
+  let tokens: Vec<_> = CueParser::new("<ab:00:00.000>").collect();
+  assert!(
+    !tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "non-digit hours should not parse as timestamp"
+  );
+}
+
+/// Empty hour prefix: `<:00:00.000>` — colon where a digit is expected.
+#[test]
+fn cue_text_rejects_empty_hour_prefix() {
+  let tokens: Vec<_> = CueParser::new("<:00:00.000>").collect();
+  assert!(
+    !tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "empty hour prefix should not parse as timestamp"
+  );
+}
+
+/// Very large hours that would overflow u64: 30-digit hour value.
+#[test]
+fn cue_text_rejects_overflowing_hours() {
+  // 30 digits exceeds u64::MAX (20 digits)
+  let tag = format!("<{}:00:00.000>", "9".repeat(30));
+  let tokens: Vec<_> = CueParser::new(&tag).collect();
+  assert!(
+    !tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "overflowing hours should not parse as timestamp"
+  );
+}
+
+/// Unterminated timestamp tag with valid format goes through `parse_timestamp_cue`.
+#[test]
+fn cue_text_unterminated_valid_timestamp() {
+  // `<00:05.000` without closing `>` — handled by try_parse_unterminated
+  let tokens: Vec<_> = CueParser::new("<00:05.000").collect();
+  assert!(
+    tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "unterminated but valid timestamp should parse"
+  );
+}
+
+/// Unterminated timestamp with invalid digits goes through `parse_timestamp_cue`
+/// and is safely rejected.
+#[test]
+fn cue_text_unterminated_invalid_timestamp() {
+  let tokens: Vec<_> = CueParser::new("<99:99.000").collect();
+  assert!(
+    !tokens.iter().any(|t| matches!(t, CueToken::Timestamp(_))),
+    "unterminated invalid timestamp should be rejected"
+  );
+}
