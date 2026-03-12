@@ -45,9 +45,7 @@ fn load_all_vtt_fixtures() -> String {
     "fixtures/webvtt/wpt-cue-parsing",
   ] {
     if let Ok(read_dir) = std::fs::read_dir(dir) {
-      let mut entries: Vec<_> = read_dir
-        .filter_map(Result::ok)
-        .collect();
+      let mut entries: Vec<_> = read_dir.filter_map(Result::ok).collect();
       entries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
       for entry in entries {
         if entry.path().extension().is_some_and(|e| e == "vtt") {
