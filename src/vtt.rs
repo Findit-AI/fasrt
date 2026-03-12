@@ -45,7 +45,7 @@ pub enum ParseVttError {
 
   /// A timestamp could not be parsed.
   #[error("invalid timestamp: {0}")]
-  InvalidTimestamp(&'static str),
+  InvalidTimestamp(TimestampError),
 
   /// The timing line is malformed (missing `-->`).
   #[error("invalid timing line: missing '-->' separator")]
@@ -125,15 +125,16 @@ pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
   let b = s.as_bytes();
   let len = b.len();
   if len < 9 {
-    return Err(ParseVttError::InvalidTimestamp("too short"));
+    return Err(ParseVttError::InvalidTimestamp(
+      TimestampError::InvalidLength,
+    ));
   }
   let millis = Millisecond(vtt_digit3(&b[len - 3..]));
   let seconds = Second(vtt_digit2(&b[len - 6..len - 4]));
   let minutes = Minute(vtt_digit2(&b[len - 9..len - 7]));
   let hours = if len > 9 {
     let hour_str = &s[..len - 10];
-    parse_vtt_hour_bytes(hour_str.as_bytes())
-      .map_err(|_| ParseVttError::InvalidTimestamp("invalid hours"))?
+    parse_vtt_hour_bytes(hour_str.as_bytes())?
   } else {
     Hour::new()
   };
@@ -149,36 +150,47 @@ pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
 pub(crate) fn parse_timestamp_cue(s: &str) -> Result<Timestamp, ParseVttError> {
   let b = s.as_bytes();
   let len = b.len();
-  if len < 9 {
-    return Err(ParseVttError::InvalidTimestamp("too short"));
+  // Short form `MM:SS.mmm` = 9 bytes (0 hour digits).
+  // Long form `H+:MM:SS.mmm` = 12..=29 bytes (1..=20 hour digits).
+  // Reject lengths outside [9, 29] and the gap [10, 11].
+  if len < 9 || len > 29 || (len > 9 && len < 12) {
+    return Err(ParseVttError::InvalidTimestamp(
+      TimestampError::InvalidLength,
+    ));
   }
   // Validate separators.
   if b[len - 4] != b'.' || b[len - 7] != b':' {
-    return Err(ParseVttError::InvalidTimestamp("invalid format"));
+    return Err(ParseVttError::InvalidTimestamp(
+      TimestampError::InvalidFormat,
+    ));
   }
   // Validate digit bytes before arithmetic.
-  let millis_val =
-    vtt_digit3_checked(&b[len - 3..]).ok_or(ParseVttError::InvalidTimestamp("invalid digits"))?;
-  let seconds_val = vtt_digit2_checked(&b[len - 6..len - 4])
-    .ok_or(ParseVttError::InvalidTimestamp("invalid digits"))?;
-  let minutes_val = vtt_digit2_checked(&b[len - 9..len - 7])
-    .ok_or(ParseVttError::InvalidTimestamp("invalid digits"))?;
-  let millis = Millisecond::try_with(millis_val)
-    .ok_or(ParseVttError::InvalidTimestamp("milliseconds out of range"))?;
-  let seconds =
-    Second::try_with(seconds_val).ok_or(ParseVttError::InvalidTimestamp("seconds out of range"))?;
-  let minutes =
-    Minute::try_with(minutes_val).ok_or(ParseVttError::InvalidTimestamp("minutes out of range"))?;
-  let hours = if len > 9 {
+  let millis_val = vtt_digit3_checked(&b[len - 3..]).ok_or(ParseVttError::InvalidTimestamp(
+    TimestampError::InvalidDigits,
+  ))?;
+  let seconds_val = vtt_digit2_checked(&b[len - 6..len - 4]).ok_or(
+    ParseVttError::InvalidTimestamp(TimestampError::InvalidDigits),
+  )?;
+  let minutes_val = vtt_digit2_checked(&b[len - 9..len - 7]).ok_or(
+    ParseVttError::InvalidTimestamp(TimestampError::InvalidDigits),
+  )?;
+  let millis = Millisecond::try_with(millis_val).ok_or(ParseVttError::ParseMillisecond(
+    ParseMillisecondError::Overflow(millis_val),
+  ))?;
+  let seconds = Second::try_with(seconds_val).ok_or(ParseVttError::ParseSecond(
+    ParseSecondError::Overflow(seconds_val),
+  ))?;
+  let minutes = Minute::try_with(minutes_val).ok_or(ParseVttError::ParseMinute(
+    ParseMinuteError::Overflow(minutes_val),
+  ))?;
+  let hours = if len >= 12 {
     if b[len - 10] != b':' {
-      return Err(ParseVttError::InvalidTimestamp("invalid format"));
+      return Err(ParseVttError::InvalidTimestamp(
+        TimestampError::InvalidFormat,
+      ));
     }
-    let hour_str = &s[..len - 10];
-    if hour_str.is_empty() {
-      return Err(ParseVttError::InvalidTimestamp("invalid hours"));
-    }
-    parse_vtt_hour_bytes(hour_str.as_bytes())
-      .map_err(|_| ParseVttError::InvalidTimestamp("invalid hours"))?
+    let hour_bytes = &b[..len - 10];
+    parse_vtt_hour_bytes(hour_bytes)?
   } else {
     Hour::new()
   };

@@ -86,6 +86,26 @@ pub enum ParseMillisecondError {
   ParseInt(#[from] ParseIntError),
 }
 
+/// Specific reason why a VTT timestamp has invalid structure.
+///
+/// This covers structural validation errors only (length, separators, digits).
+/// Component range errors (hours, minutes, seconds, milliseconds) are
+/// represented by their dedicated error types ([`ParseHourError`],
+/// [`ParseMinuteError`], [`ParseSecondError`], [`ParseMillisecondError`])
+/// which are separate variants of [`crate::vtt::ParseVttError`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum TimestampError {
+  /// The input is too short or has an invalid length for a VTT timestamp.
+  #[error("invalid length")]
+  InvalidLength,
+  /// A separator (`.` or `:`) is not in the expected position.
+  #[error("invalid format")]
+  InvalidFormat,
+  /// One or more digit positions contain non-digit bytes.
+  #[error("invalid digits")]
+  InvalidDigits,
+}
+
 /// The error type for parsing index numbers of subtitles.
 #[derive(Debug, Clone, PartialEq, Eq, IsVariant, Unwrap, TryUnwrap, thiserror::Error)]
 #[unwrap(ref, ref_mut)]
