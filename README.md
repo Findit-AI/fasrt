@@ -78,19 +78,26 @@ Measured on Apple Silicon with `cargo bench` (Criterion).
 
 | Benchmark | Input | Time | Throughput |
 |-----------|-------|------|------------|
-| Parse (strict) | 2 cues, 89 B | ~316 ns | 281 MiB/s |
-| Parse (strict) | 26 KB file | ~39 µs | 645 MiB/s |
-| Parse (lossy) | 332 files, ~8 MB | ~12.5 ms | 624 MiB/s |
-| Collect into `Vec` | 26 KB file | ~41 µs | 606 MiB/s |
+| Parse (strict) | 2 cues, 89 B | ~170 ns | 520 MiB/s |
+| Parse (strict) | 26 KB file | ~38 µs | 661 MiB/s |
+| Parse (lossy) | 332 files, ~8 MB | ~12.1 ms | 646 MiB/s |
+| Collect into `Vec` | 26 KB file | ~40 µs | 616 MiB/s |
 
 ### WebVTT
 
 | Benchmark | Input | Time | Throughput |
 |-----------|-------|------|------------|
-| Parse | 2 cues, 96 B | ~299 ns | 309 MiB/s |
-| Parse | Settings + region + style, 354 B | ~829 ns | 427 MiB/s |
-| Parse | All WPT fixtures, ~34 KB | ~103 µs | 342 MiB/s |
-| Collect into `Vec` | Settings + region + style, 354 B | ~1.08 µs | 329 MiB/s |
+| Parse | 2 cues, 96 B | ~318 ns | 291 MiB/s |
+| Parse | Settings + region + style, 354 B | ~915 ns | 387 MiB/s |
+| Parse | All WPT fixtures, ~34 KB | ~113 µs | 314 MiB/s |
+| Collect into `Vec` | Settings + region + style, 354 B | ~973 ns | 364 MiB/s |
+
+### Cue Text
+
+| Benchmark | Input | Time | Throughput |
+|-----------|-------|------|------------|
+| Parse | Tags only, 166 B | ~316 ns | 552 MiB/s |
+| Parse | 500 timestamps, ~11 KB | ~14.1 µs | 776 MiB/s |
 
 Run benchmarks yourself:
 

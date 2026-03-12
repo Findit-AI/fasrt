@@ -202,14 +202,22 @@ fn parse_vtt_hour_bytes(b: &[u8]) -> Result<Hour, ParseHourError> {
 }
 
 /// Unchecked 2-digit extraction. Caller must guarantee ASCII digits.
+///
+/// Only called from [`parse_timestamp`], which requires logos-regex-validated input.
+/// Debug assertions catch misuse during development.
 #[cfg_attr(not(tarpaulin), inline(always))]
-const fn vtt_digit2(b: &[u8]) -> u8 {
+fn vtt_digit2(b: &[u8]) -> u8 {
+  debug_assert!(b[0].is_ascii_digit() && b[1].is_ascii_digit());
   (b[0] - b'0') * 10 + (b[1] - b'0')
 }
 
 /// Unchecked 3-digit extraction. Caller must guarantee ASCII digits.
+///
+/// Only called from [`parse_timestamp`], which requires logos-regex-validated input.
+/// Debug assertions catch misuse during development.
 #[cfg_attr(not(tarpaulin), inline(always))]
-const fn vtt_digit3(b: &[u8]) -> u16 {
+fn vtt_digit3(b: &[u8]) -> u16 {
+  debug_assert!(b[0].is_ascii_digit() && b[1].is_ascii_digit() && b[2].is_ascii_digit());
   (b[0] - b'0') as u16 * 100 + (b[1] - b'0') as u16 * 10 + (b[2] - b'0') as u16
 }
 
