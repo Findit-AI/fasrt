@@ -16,16 +16,28 @@ Goodbye world!
 const MEDIUM_SRT: &str = include_str!("../fixtures/srt/DeathNote_01.eng.srt");
 
 fn load_all_fixtures() -> String {
-  let mut buf = String::new();
-  for entry in std::fs::read_dir("fixtures/srt").unwrap() {
-    let entry = entry.unwrap();
-    if entry.path().extension().is_some_and(|e| e == "srt") {
-      if let Ok(content) = std::fs::read_to_string(entry.path()) {
-        if !buf.is_empty() {
-          buf.push_str("\n\n");
-        }
-        buf.push_str(&content);
+  let mut paths: Vec<_> = std::fs::read_dir("fixtures/srt")
+    .unwrap()
+    .filter_map(|entry| {
+      let entry = entry.ok()?;
+      let path = entry.path();
+      if path.extension().is_some_and(|e| e == "srt") {
+        Some(path)
+      } else {
+        None
       }
+    })
+    .collect();
+
+  paths.sort();
+
+  let mut buf = String::new();
+  for path in paths {
+    if let Ok(content) = std::fs::read_to_string(path) {
+      if !buf.is_empty() {
+        buf.push_str("\n\n");
+      }
+      buf.push_str(&content);
     }
   }
   buf
