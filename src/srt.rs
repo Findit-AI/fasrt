@@ -3,6 +3,7 @@ use core::num::NonZeroU64;
 use logos::{Lexer, Logos};
 
 use crate::error::*;
+use crate::types::{Millisecond, Minute, Second};
 
 pub use types::{Entry, Header, Hour, Timestamp};
 
@@ -293,7 +294,7 @@ impl Default for Options {
 enum Token {
   /// Header "HH:MM:SS,mmm --> HH:MM:SS,mmm"
   #[regex(
-    r"[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-9]{1,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}",
+    r"[0-9]{2,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}[ \t\x0C]+-->[ \t\x0C]+[0-9]{2,3}:[0-5][0-9]:[0-5][0-9],[0-9]{3}",
     parse_header
   )]
   Header(Header),
@@ -322,35 +323,45 @@ fn parse_number(s: &mut Lexer<'_, Token>) -> Result<NonZeroU64, ParseSrtError> {
 
 #[inline]
 fn parse_header(s: &mut Lexer<'_, Token>) -> Result<Header, ParseSrtError> {
-  let s = s.slice().trim();
-  let mut parts = s.split(" --> ");
-  match (parts.next(), parts.next()) {
-    (Some(start), Some(end)) => {
-      let start = parse_timestamp(start)?;
-      let end = parse_timestamp(end)?;
-      Ok(Header::new(start, end))
-    }
-    _ => panic!("logos regex should guarantee this never happens"),
-  }
+  let slice = s.slice();
+  // The regex guarantees `HH+:MM:SS,mmm <ws> --> <ws> HH+:MM:SS,mmm`.
+  // Find the arrow separator and extract both timestamps via byte arithmetic.
+  let arrow = slice.find("-->").unwrap();
+  let start_str = slice[..arrow].trim();
+  let end_str = slice[arrow + 3..].trim();
+  let start = parse_timestamp_bytes(start_str.as_bytes())?;
+  let end = parse_timestamp_bytes(end_str.as_bytes())?;
+  Ok(Header::new(start, end))
 }
 
+/// Parse an SRT timestamp from raw bytes using direct digit extraction.
+///
+/// Format: `H+:MM:SS,mmm` where H is 2-3 digits (regex-validated),
+/// MM and SS are exactly 2 digits, mmm is exactly 3 digits.
+/// Layout from the end: `mmm`(3) `,`(1) `SS`(2) `:`(1) `MM`(2) `:`(1) = 10 fixed bytes.
 #[inline]
-fn parse_timestamp(s: &str) -> Result<Timestamp, ParseSrtError> {
-  let mut parts = s.split(",");
+fn parse_timestamp_bytes(b: &[u8]) -> Result<Timestamp, ParseSrtError> {
+  let len = b.len();
+  let millis = Millisecond(digit3(&b[len - 3..]));
+  let seconds = Second(digit2(&b[len - 6..len - 4]));
+  let minutes = Minute(digit2(&b[len - 9..len - 7]));
+  let hour_len = len - 10;
+  let hours = match hour_len {
+    2 => Hour(digit2(&b[..2]) as u16),
+    3 => Hour(digit3(&b[..3])),
+    _ => return Err(ParseHourError::NotPadded.into()),
+  };
+  Ok(Timestamp::from_hmsm(hours, minutes, seconds, millis))
+}
 
-  match (parts.next(), parts.next()) {
-    (Some(hms), Some(millis)) => {
-      let mut hms_parts = hms.split(':');
+#[cfg_attr(not(tarpaulin), inline(always))]
+const fn digit2(b: &[u8]) -> u8 {
+  (b[0] - b'0') * 10 + (b[1] - b'0')
+}
 
-      let (h, m, s) = match (hms_parts.next(), hms_parts.next(), hms_parts.next()) {
-        (Some(h), Some(m), Some(s)) => (h.parse()?, m.parse()?, s.parse()?),
-        _ => panic!("logos regex should guarantee this never happens"),
-      };
-      let millis = millis.parse()?;
-      Ok(Timestamp::from_hmsm(h, m, s, millis))
-    }
-    _ => panic!("logos regex should guarantee this never happens"),
-  }
+#[cfg_attr(not(tarpaulin), inline(always))]
+const fn digit3(b: &[u8]) -> u16 {
+  (b[0] - b'0') as u16 * 100 + (b[1] - b'0') as u16 * 10 + (b[2] - b'0') as u16
 }
 
 struct StateBody {
@@ -736,18 +747,23 @@ impl<'a> Iterator for Lines<'a> {
       return None;
     }
 
-    let remaining = &self.input[self.pos..];
-    let line_end = remaining
-      .find('\n')
+    let bytes = &self.input.as_bytes()[self.pos..];
+
+    #[cfg(all(feature = "memchr", not(miri)))]
+    let found = memchr::memchr(b'\n', bytes);
+    #[cfg(not(all(feature = "memchr", not(miri))))]
+    let found = bytes.iter().position(|&b| b == b'\n');
+
+    let line_end = found
       .map(|i| {
-        let end = if i > 0 && remaining.as_bytes()[i - 1] == b'\r' {
+        let end = if i > 0 && bytes[i - 1] == b'\r' {
           i - 1
         } else {
           i
         };
         (end, i + 1)
       })
-      .unwrap_or((remaining.len(), remaining.len()));
+      .unwrap_or((bytes.len(), bytes.len()));
 
     let line = &self.input[self.pos..self.pos + line_end.0];
     self.pos += line_end.1;

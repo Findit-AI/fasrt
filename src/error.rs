@@ -38,18 +38,31 @@ pub enum ParseSecondError {
 }
 
 /// The error type for parsing hour components of timestamps.
+///
+/// This enum is shared by both SRT and WebVTT parsers:
+/// - **SRT** hours are 2–3 digits (0–999): uses [`NotPadded`](Self::NotPadded)
+///   and [`Overflow(u16)`](Self::Overflow).
+/// - **WebVTT** hours are unbounded (`u64`): uses [`NotPadded`](Self::NotPadded)
+///   for non-digit input and [`HourOverflow`](Self::HourOverflow) when the
+///   value exceeds `u64::MAX`.
 #[derive(Debug, Clone, PartialEq, Eq, IsVariant, Unwrap, TryUnwrap, thiserror::Error)]
 #[unwrap(ref, ref_mut)]
 #[try_unwrap(ref, ref_mut)]
 pub enum ParseHourError {
-  /// The hour component is not zero-padded to 2 digits.
-  #[error("hour component is not zero-padded to 2 digits")]
+  /// The hour component is not zero-padded to 2 digits (SRT),
+  /// or contains non-digit characters (VTT).
+  #[error("hour component is not zero-padded to 2 digits or contains invalid characters")]
   #[unwrap(ignore)]
   #[try_unwrap(ignore)]
   NotPadded,
-  /// The hour component is out of range (not between 0-999).
+  /// The hour component is out of the SRT range (0–999).
   #[error("hour component must be between 0-999, but was {0}")]
   Overflow(u16),
+  /// The hour component overflowed `u64` (VTT unbounded hours).
+  #[error("hour component overflowed")]
+  #[unwrap(ignore)]
+  #[try_unwrap(ignore)]
+  HourOverflow,
   /// Not a valid number.
   #[error(transparent)]
   ParseInt(#[from] ParseIntError),
@@ -71,6 +84,26 @@ pub enum ParseMillisecondError {
   /// Not a valid number.
   #[error(transparent)]
   ParseInt(#[from] ParseIntError),
+}
+
+/// Specific reason why a VTT timestamp has invalid structure.
+///
+/// This covers structural validation errors only (length, separators, digits).
+/// Component range errors (hours, minutes, seconds, milliseconds) are
+/// represented by their dedicated error types ([`ParseHourError`],
+/// [`ParseMinuteError`], [`ParseSecondError`], [`ParseMillisecondError`])
+/// which are separate variants of [`crate::vtt::ParseVttError`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum TimestampError {
+  /// The input is too short or has an invalid length for a VTT timestamp.
+  #[error("invalid length")]
+  InvalidLength,
+  /// A separator (`.` or `:`) is not in the expected position.
+  #[error("invalid format")]
+  InvalidFormat,
+  /// One or more digit positions contain non-digit bytes.
+  #[error("invalid digits")]
+  InvalidDigits,
 }
 
 /// The error type for parsing index numbers of subtitles.

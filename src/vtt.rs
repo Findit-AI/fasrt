@@ -1,6 +1,9 @@
 use logos::{Lexer, Logos};
 
-use crate::{error::*, types::Millisecond};
+use crate::{
+  error::*,
+  types::{Millisecond, Minute, Second},
+};
 
 pub use types::{
   Align, Anchor, Block, Cue, CueId, CueOptions, Header, Hour, Line, LineAlign, LineValue,
@@ -42,7 +45,7 @@ pub enum ParseVttError {
 
   /// A timestamp could not be parsed.
   #[error("invalid timestamp: {0}")]
-  InvalidTimestamp(&'static str),
+  InvalidTimestamp(TimestampError),
 
   /// The timing line is malformed (missing `-->`).
   #[error("invalid timing line: missing '-->' separator")]
@@ -104,36 +107,156 @@ fn split_arrow(s: &str) -> Result<(&str, &str), ParseVttError> {
 }
 
 /// Parse a timestamp in either long form `HH:MM:SS.mmm` or short form
-/// `MM:SS.mmm`. Auto-detects by counting `:` separators.
+/// `MM:SS.mmm` using direct byte extraction.
+///
+/// The logos regex guarantees the format, so we can extract fields by
+/// fixed offsets from the end: `mmm`(3) `.`(1) `SS`(2) `:`(1) `MM`(2)
+/// = 9 fixed bytes. If there's a `:`(1) before that, everything before
+/// it is the hours component.
+///
+/// # Safety assumption
+///
+/// Callers **must** ensure that `s` has already been validated by a
+/// logos regex (which guarantees digit/separator placement).
+/// For loosely-validated input (e.g. unterminated cue-text tags), use
+/// [`parse_timestamp_cue`] instead.
 #[inline]
 pub(crate) fn parse_timestamp(s: &str) -> Result<Timestamp, ParseVttError> {
-  let (time, ms) = s
-    .split_once('.')
-    .ok_or(ParseVttError::InvalidTimestamp("missing '.'"))?;
-  let millis: Millisecond = ms.parse()?;
-  let mut parts = time.splitn(3, ':');
-  let first = parts
-    .next()
-    .ok_or(ParseVttError::InvalidTimestamp("empty timestamp"))?;
-  let second = parts.next().ok_or(ParseVttError::InvalidTimestamp(
-    "missing minutes or seconds",
-  ))?;
-  match parts.next() {
-    // Long form: HH:MM:SS
-    Some(sec_str) => Ok(Timestamp::from_hmsm(
-      first.parse()?,
-      second.parse()?,
-      sec_str.parse()?,
-      millis,
-    )),
-    // Short form: MM:SS
-    None => Ok(Timestamp::from_hmsm(
-      Hour::new(),
-      first.parse()?,
-      second.parse()?,
-      millis,
-    )),
+  let b = s.as_bytes();
+  let len = b.len();
+  if len < 9 {
+    return Err(ParseVttError::InvalidTimestamp(
+      TimestampError::InvalidLength,
+    ));
   }
+  let millis = Millisecond(vtt_digit3(&b[len - 3..]));
+  let seconds = Second(vtt_digit2(&b[len - 6..len - 4]));
+  let minutes = Minute(vtt_digit2(&b[len - 9..len - 7]));
+  let hours = if len > 9 {
+    let hour_str = &s[..len - 10];
+    parse_vtt_hour_bytes(hour_str.as_bytes())?
+  } else {
+    Hour::new()
+  };
+  Ok(Timestamp::from_hmsm(hours, minutes, seconds, millis))
+}
+
+/// Parse a timestamp from cue-text, where input is only loosely validated
+/// by the regex `<[0-9:]+\.[0-9]{3}>`.
+///
+/// Unlike [`parse_timestamp`], this validates separators and digit bytes
+/// before doing any arithmetic, so it is safe for untrusted input.
+#[inline]
+pub(crate) fn parse_timestamp_cue(s: &str) -> Result<Timestamp, ParseVttError> {
+  let b = s.as_bytes();
+  let len = b.len();
+  // Short form `MM:SS.mmm` = 9 bytes (0 hour digits).
+  // Long form `H+:MM:SS.mmm` = 12..=29 bytes (1..=20 hour digits).
+  // Reject lengths outside [9, 29] and the gap [10, 11].
+  if !(9..=29).contains(&len) || (len > 9 && len < 12) {
+    return Err(ParseVttError::InvalidTimestamp(
+      TimestampError::InvalidLength,
+    ));
+  }
+  // Validate separators.
+  if b[len - 4] != b'.' || b[len - 7] != b':' {
+    return Err(ParseVttError::InvalidTimestamp(
+      TimestampError::InvalidFormat,
+    ));
+  }
+  // Validate digit bytes before arithmetic.
+  let millis_val = vtt_digit3_checked(&b[len - 3..]).ok_or(ParseVttError::InvalidTimestamp(
+    TimestampError::InvalidDigits,
+  ))?;
+  let seconds_val = vtt_digit2_checked(&b[len - 6..len - 4]).ok_or(
+    ParseVttError::InvalidTimestamp(TimestampError::InvalidDigits),
+  )?;
+  let minutes_val = vtt_digit2_checked(&b[len - 9..len - 7]).ok_or(
+    ParseVttError::InvalidTimestamp(TimestampError::InvalidDigits),
+  )?;
+  let millis = Millisecond::try_with(millis_val).ok_or(ParseVttError::ParseMillisecond(
+    ParseMillisecondError::Overflow(millis_val),
+  ))?;
+  let seconds = Second::try_with(seconds_val).ok_or(ParseVttError::ParseSecond(
+    ParseSecondError::Overflow(seconds_val),
+  ))?;
+  let minutes = Minute::try_with(minutes_val).ok_or(ParseVttError::ParseMinute(
+    ParseMinuteError::Overflow(minutes_val),
+  ))?;
+  let hours = if len >= 12 {
+    if b[len - 10] != b':' {
+      return Err(ParseVttError::InvalidTimestamp(
+        TimestampError::InvalidFormat,
+      ));
+    }
+    let hour_bytes = &b[..len - 10];
+    parse_vtt_hour_bytes(hour_bytes)?
+  } else {
+    Hour::new()
+  };
+  Ok(Timestamp::from_hmsm(hours, minutes, seconds, millis))
+}
+
+/// Parse VTT hour bytes (variable-length, unbounded u64).
+///
+/// Uses checked arithmetic to prevent overflow on extremely large
+/// hour values from untrusted input.
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn parse_vtt_hour_bytes(b: &[u8]) -> Result<Hour, ParseHourError> {
+  let mut val: u64 = 0;
+  for &byte in b {
+    if !byte.is_ascii_digit() {
+      return Err(ParseHourError::NotPadded);
+    }
+    val = val
+      .checked_mul(10)
+      .and_then(|v| v.checked_add((byte - b'0') as u64))
+      .ok_or(ParseHourError::HourOverflow)?;
+  }
+  Ok(Hour(val))
+}
+
+/// Unchecked 2-digit extraction. Caller must guarantee ASCII digits.
+///
+/// Only called from [`parse_timestamp`], which requires logos-regex-validated input.
+/// Debug assertions catch misuse during development.
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn vtt_digit2(b: &[u8]) -> u8 {
+  debug_assert!(b[0].is_ascii_digit() && b[1].is_ascii_digit());
+  (b[0] - b'0') * 10 + (b[1] - b'0')
+}
+
+/// Unchecked 3-digit extraction. Caller must guarantee ASCII digits.
+///
+/// Only called from [`parse_timestamp`], which requires logos-regex-validated input.
+/// Debug assertions catch misuse during development.
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn vtt_digit3(b: &[u8]) -> u16 {
+  debug_assert!(b[0].is_ascii_digit() && b[1].is_ascii_digit() && b[2].is_ascii_digit());
+  (b[0] - b'0') as u16 * 100 + (b[1] - b'0') as u16 * 10 + (b[2] - b'0') as u16
+}
+
+/// Checked 2-digit extraction. Returns `None` if any byte is not an ASCII digit.
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn vtt_digit2_checked(b: &[u8]) -> Option<u8> {
+  let d0 = b[0].wrapping_sub(b'0');
+  let d1 = b[1].wrapping_sub(b'0');
+  if d0 > 9 || d1 > 9 {
+    return None;
+  }
+  Some(d0 * 10 + d1)
+}
+
+/// Checked 3-digit extraction. Returns `None` if any byte is not an ASCII digit.
+#[cfg_attr(not(tarpaulin), inline(always))]
+fn vtt_digit3_checked(b: &[u8]) -> Option<u16> {
+  let d0 = b[0].wrapping_sub(b'0');
+  let d1 = b[1].wrapping_sub(b'0');
+  let d2 = b[2].wrapping_sub(b'0');
+  if d0 > 9 || d1 > 9 || d2 > 9 {
+    return None;
+  }
+  Some(d0 as u16 * 100 + d1 as u16 * 10 + d2 as u16)
 }
 
 /// Lex the next token from a line. Returns `Ok(None)` when the line
@@ -1253,28 +1376,27 @@ impl<'a> Iterator for Lines<'a> {
     }
 
     let bytes = &self.input.as_bytes()[self.pos..];
-    let mut i = 0;
-    while i < bytes.len() {
-      if bytes[i] == b'\n' {
+
+    #[cfg(all(feature = "memchr", not(miri)))]
+    let found = memchr::memchr2(b'\n', b'\r', bytes);
+    #[cfg(any(not(feature = "memchr"), miri))]
+    let found = bytes.iter().position(|&b| b == b'\n' || b == b'\r');
+
+    match found {
+      Some(i) => {
         let line = &self.input[self.pos..self.pos + i];
-        self.pos += i + 1;
-        return Some(line);
-      } else if bytes[i] == b'\r' {
-        let line = &self.input[self.pos..self.pos + i];
-        // Check for CRLF
-        if i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
+        if bytes[i] == b'\r' && i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
           self.pos += i + 2;
         } else {
           self.pos += i + 1;
         }
-        return Some(line);
+        Some(line)
       }
-      i += 1;
+      None => {
+        let line = &self.input[self.pos..];
+        self.pos = self.input.len();
+        Some(line)
+      }
     }
-
-    // No line terminator found - rest of input
-    let line = &self.input[self.pos..];
-    self.pos = self.input.len();
-    Some(line)
   }
 }
