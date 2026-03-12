@@ -375,6 +375,226 @@ impl CueTokenExt for CueToken<'_> {
   }
 }
 
+// ── Numeric character reference tests ─────────────────────────────────────────
+
+#[test]
+fn parse_numeric_char_ref_decimal() {
+  let tokens: Vec<_> = CueParser::new("&#65;").collect();
+  assert_eq!(tokens[0].as_normalized_text().unwrap(), "A");
+}
+
+#[test]
+fn parse_numeric_char_ref_hex() {
+  let tokens: Vec<_> = CueParser::new("&#x41;").collect();
+  assert_eq!(tokens[0].as_normalized_text().unwrap(), "A");
+}
+
+#[test]
+fn parse_numeric_char_ref_hex_uppercase() {
+  let tokens: Vec<_> = CueParser::new("&#X42;").collect();
+  assert_eq!(tokens[0].as_normalized_text().unwrap(), "B");
+}
+
+#[test]
+fn parse_numeric_char_ref_null_replaced() {
+  let tokens: Vec<_> = CueParser::new("&#0;").collect();
+  assert_eq!(tokens[0].as_normalized_text().unwrap(), "\u{FFFD}");
+}
+
+#[test]
+fn parse_numeric_char_ref_invalid_codepoint() {
+  // U+FFFFFF is not a valid Unicode codepoint
+  let tokens: Vec<_> = CueParser::new("&#xFFFFFF;").collect();
+  assert_eq!(tokens[0].as_normalized_text().unwrap(), "\u{FFFD}");
+}
+
+#[test]
+fn parse_numeric_char_ref_no_digits() {
+  let tokens: Vec<_> = CueParser::new("&#;").collect();
+  let text = tokens[0].as_normalized_text().unwrap();
+  assert!(text.contains("&#"));
+}
+
+#[test]
+fn parse_numeric_char_ref_hex_no_digits() {
+  let tokens: Vec<_> = CueParser::new("&#x;").collect();
+  let text = tokens[0].as_normalized_text().unwrap();
+  assert!(text.contains("&#x"));
+}
+
+#[test]
+fn parse_ampersand_followed_by_non_alnum() {
+  let tokens: Vec<_> = CueParser::new("a&!b").collect();
+  assert_eq!(tokens[0].as_normalized_text().unwrap(), "a&!b");
+}
+
+#[test]
+fn parse_trailing_ampersand_hash() {
+  let tokens: Vec<_> = CueParser::new("a&#").collect();
+  let text = tokens[0].as_normalized_text().unwrap();
+  assert!(text.contains("&#"));
+}
+
+#[test]
+fn parse_numeric_ref_without_semicolon() {
+  let tokens: Vec<_> = CueParser::new("&#65x").collect();
+  let text = tokens[0].as_normalized_text().unwrap();
+  // Should decode &#65 as 'A' and output 'x'
+  assert!(text.contains('A'));
+}
+
+// ── CueStr Clone and Debug tests ─────────────────────────────────────────────
+
+#[test]
+fn cue_str_clone() {
+  let tokens: Vec<_> = CueParser::new("a&amp;b").collect();
+  if let CueToken::Text(cue_str) = &tokens[0] {
+    let cloned = cue_str.clone();
+    assert_eq!(cloned.as_raw(), cue_str.as_raw());
+    assert_eq!(
+      cloned.requires_normalization(),
+      cue_str.requires_normalization()
+    );
+  }
+}
+
+#[test]
+fn cue_str_debug() {
+  let tokens: Vec<_> = CueParser::new("test").collect();
+  if let CueToken::Text(cue_str) = &tokens[0] {
+    let debug = format!("{:?}", cue_str);
+    assert!(debug.contains("CueStr"));
+    assert!(debug.contains("test"));
+  }
+}
+
+// ── Unterminated tag tests ────────────────────────────────────────────────────
+
+#[test]
+fn parse_unterminated_bold() {
+  let tokens: Vec<_> = CueParser::new("<b").collect();
+  assert!(matches!(
+    &tokens[0],
+    CueToken::StartTag { tag: Tag::Bold, .. }
+  ));
+}
+
+#[test]
+fn parse_unterminated_italic_with_class() {
+  let tokens: Vec<_> = CueParser::new("<i.highlight").collect();
+  assert!(matches!(
+    &tokens[0],
+    CueToken::StartTag {
+      tag: Tag::Italic,
+      ..
+    }
+  ));
+}
+
+#[test]
+fn parse_unterminated_voice() {
+  let tokens: Vec<_> = CueParser::new("<v Speaker").collect();
+  assert!(matches!(
+    &tokens[0],
+    CueToken::StartTag {
+      tag: Tag::Voice,
+      annotation: Some("Speaker"),
+      ..
+    }
+  ));
+}
+
+#[test]
+fn parse_unterminated_ruby() {
+  let tokens: Vec<_> = CueParser::new("<ruby").collect();
+  assert!(matches!(
+    &tokens[0],
+    CueToken::StartTag { tag: Tag::Ruby, .. }
+  ));
+}
+
+#[test]
+fn parse_unterminated_rt() {
+  let tokens: Vec<_> = CueParser::new("<ruby><rt").collect();
+  assert_eq!(tokens.len(), 2);
+  assert!(matches!(
+    &tokens[1],
+    CueToken::StartTag {
+      tag: Tag::RubyText,
+      ..
+    }
+  ));
+}
+
+#[test]
+fn parse_unterminated_lang() {
+  let tokens: Vec<_> = CueParser::new("<lang en").collect();
+  assert!(matches!(
+    &tokens[0],
+    CueToken::StartTag {
+      tag: Tag::Lang,
+      annotation: Some("en"),
+      ..
+    }
+  ));
+}
+
+#[test]
+fn parse_unterminated_unknown() {
+  let tokens: Vec<_> = CueParser::new("<xyz").collect();
+  assert!(tokens.is_empty());
+}
+
+#[test]
+fn parse_unterminated_empty() {
+  let tokens: Vec<_> = CueParser::new("<").collect();
+  assert!(tokens.is_empty());
+}
+
+#[test]
+fn parse_unterminated_ruby_wrong_char() {
+  let tokens: Vec<_> = CueParser::new("<rubyX").collect();
+  assert!(tokens.is_empty());
+}
+
+#[test]
+fn parse_unterminated_rt_wrong_char() {
+  let tokens: Vec<_> = CueParser::new("<rtX").collect();
+  assert!(tokens.is_empty());
+}
+
+#[test]
+fn parse_unterminated_lang_wrong_char() {
+  let tokens: Vec<_> = CueParser::new("<langX").collect();
+  assert!(tokens.is_empty());
+}
+
+// ── CueText DOM tree edge cases ──────────────────────────────────────────────
+
+#[test]
+fn tree_rt_outside_ruby_ignored() {
+  let tree = CueText::parse("<rt>text</rt>");
+  // <rt> outside <ruby> should be ignored per spec
+  assert_eq!(tree.children().len(), 1);
+  assert!(matches!(&tree.children()[0], Node::Text(t) if t.normalize() == "text"));
+}
+
+#[test]
+fn tree_end_rt_outside_ruby_ignored() {
+  let tree = CueText::parse("text</rt>more");
+  // </rt> outside <ruby> should be ignored, text nodes are separate
+  assert_eq!(tree.children().len(), 2);
+  assert!(matches!(&tree.children()[0], Node::Text(t) if t.normalize() == "text"));
+  assert!(matches!(&tree.children()[1], Node::Text(t) if t.normalize() == "more"));
+}
+
+#[test]
+fn tree_into_children() {
+  let tree = CueText::parse("hello");
+  let children = tree.into_children();
+  assert_eq!(children.len(), 1);
+}
+
 // ── Malformed timestamp rejection tests ──────────────────────────────────────
 //
 // These verify that malformed cue-text timestamp tags are safely rejected
