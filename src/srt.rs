@@ -324,7 +324,7 @@ fn parse_number(s: &mut Lexer<'_, Token>) -> Result<NonZeroU64, ParseSrtError> {
 #[inline]
 fn parse_header(s: &mut Lexer<'_, Token>) -> Result<Header, ParseSrtError> {
   let slice = s.slice();
-  // The regex guarantees `H+:MM:SS,mmm <ws> --> <ws> H+:MM:SS,mmm`.
+  // The regex guarantees `HH+:MM:SS,mmm <ws> --> <ws> HH+:MM:SS,mmm`.
   // Find the arrow separator and extract both timestamps via byte arithmetic.
   let arrow = slice.find("-->").unwrap();
   let start_str = slice[..arrow].trim();
