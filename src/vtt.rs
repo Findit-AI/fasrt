@@ -174,6 +174,9 @@ pub(crate) fn parse_timestamp_cue(s: &str) -> Result<Timestamp, ParseVttError> {
       return Err(ParseVttError::InvalidTimestamp("invalid format"));
     }
     let hour_str = &s[..len - 10];
+    if hour_str.is_empty() {
+      return Err(ParseVttError::InvalidTimestamp("invalid hours"));
+    }
     parse_vtt_hour_bytes(hour_str.as_bytes())
       .map_err(|_| ParseVttError::InvalidTimestamp("invalid hours"))?
   } else {
