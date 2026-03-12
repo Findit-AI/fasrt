@@ -829,3 +829,43 @@ impl<'a, C: Nodes<'a>> fmt::Display for CueText<'a, C> {
     Ok(())
   }
 }
+
+#[cfg(test)]
+#[cfg(any(feature = "alloc", feature = "std"))]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn tag_node_as_slice() {
+    let node = TagNode::new(Tag::Bold);
+    let slice: &[TagNode<'_>] = node.as_ref();
+    assert_eq!(slice.len(), 1);
+    assert_eq!(slice[0].tag(), Tag::Bold);
+  }
+
+  #[test]
+  fn tag_node_as_mut_slice() {
+    let mut node = TagNode::new(Tag::Italic);
+    let slice: &mut [TagNode<'_>] = node.as_mut();
+    assert_eq!(slice.len(), 1);
+    assert_eq!(slice[0].tag(), Tag::Italic);
+    slice[0].set_tag(Tag::Underline);
+    assert_eq!(node.tag(), Tag::Underline);
+  }
+
+  #[test]
+  fn tag_node_as_ref() {
+    let node = TagNode::new(Tag::Class);
+    let r: &TagNode<'_> = node.as_ref();
+    assert_eq!(r.tag(), Tag::Class);
+  }
+
+  #[test]
+  fn tag_node_as_mut() {
+    let mut node = TagNode::new(Tag::Lang);
+    let r: &mut TagNode<'_> = node.as_mut();
+    assert_eq!(r.tag(), Tag::Lang);
+    r.set_tag(Tag::Voice);
+    assert_eq!(node.tag(), Tag::Voice);
+  }
+}

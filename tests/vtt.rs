@@ -902,4 +902,334 @@ Goodbye world!
 
     assert_eq!(written, original);
   }
+
+  #[test]
+  fn write_roundtrip_with_cue_settings() {
+    let original = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 vertical:rl line:50% position:10%,line-left size:80% align:center region:nav
+Hello!
+";
+
+    let blocks: Vec<Block<'_, &str>> = Parser::new(original).collect::<Result<_, _>>().unwrap();
+
+    let mut buf = Vec::new();
+    let mut w = Writer::new(&mut buf);
+    w.write_header(None).unwrap();
+    for block in &blocks {
+      w.write(block).unwrap();
+    }
+    let written = String::from_utf8(buf).unwrap();
+
+    assert_eq!(written, original);
+  }
+
+  #[test]
+  fn write_roundtrip_with_region() {
+    let original = "\
+WEBVTT
+
+REGION
+id:nav
+width:40%
+viewportanchor:10%,90%
+scroll:up
+
+00:01.000 --> 00:04.000
+Hello!
+";
+
+    let blocks: Vec<Block<'_, &str>> = Parser::new(original).collect::<Result<_, _>>().unwrap();
+
+    let mut buf = Vec::new();
+    let mut w = Writer::new(&mut buf);
+    w.write_header(None).unwrap();
+    for block in &blocks {
+      w.write(block).unwrap();
+    }
+    let written = String::from_utf8(buf).unwrap();
+
+    assert_eq!(written, original);
+  }
+}
+
+// ── Timestamp builder tests ───────────────────────────────────────────────
+
+#[test]
+fn timestamp_builder_methods() {
+  use fasrt::vtt::Timestamp;
+
+  let ts = Timestamp::new()
+    .with_hours(Hour::with(1))
+    .with_minutes(Minute::with(2))
+    .with_seconds(Second::with(3))
+    .with_millis(Millisecond::with(456));
+  assert_eq!(ts.hours(), Hour::with(1));
+  assert_eq!(ts.minutes(), Minute::with(2));
+  assert_eq!(ts.seconds(), Second::with(3));
+  assert_eq!(ts.millis(), Millisecond::with(456));
+}
+
+#[test]
+fn timestamp_setter_methods() {
+  use fasrt::vtt::Timestamp;
+
+  let mut ts = Timestamp::new();
+  ts.set_hours(Hour::with(10));
+  ts.set_minutes(Minute::with(30));
+  ts.set_seconds(Second::with(45));
+  ts.set_millis(Millisecond::with(999));
+  assert_eq!(ts.hours(), Hour::with(10));
+  assert_eq!(ts.minutes(), Minute::with(30));
+  assert_eq!(ts.seconds(), Second::with(45));
+  assert_eq!(ts.millis(), Millisecond::with(999));
+}
+
+#[test]
+fn timestamp_set_hmsm() {
+  use fasrt::vtt::Timestamp;
+
+  let mut ts = Timestamp::new();
+  ts.set_hmsm(
+    Hour::with(2),
+    Minute::with(15),
+    Second::with(30),
+    Millisecond::with(100),
+  );
+  assert_eq!(ts.hours(), Hour::with(2));
+  assert_eq!(ts.millis(), Millisecond::with(100));
+}
+
+#[test]
+fn timestamp_encoded_len() {
+  use fasrt::vtt::Timestamp;
+
+  // Short form: MM:SS.mmm = 9 chars
+  let ts = Timestamp::from_hmsm(
+    Hour::new(),
+    Minute::with(1),
+    Second::with(2),
+    Millisecond::with(3),
+  );
+  assert_eq!(ts.encoded_len(), 9);
+
+  // Long form with 2-digit hours: HH:MM:SS.mmm = 12 chars
+  let ts = Timestamp::from_hmsm(
+    Hour::with(1),
+    Minute::with(2),
+    Second::with(3),
+    Millisecond::with(456),
+  );
+  assert_eq!(ts.encoded_len(), 12);
+
+  // Long form with 3-digit hours
+  let ts = Timestamp::from_hmsm(
+    Hour::with(100),
+    Minute::with(0),
+    Second::with(0),
+    Millisecond::with(0),
+  );
+  assert_eq!(ts.encoded_len(), 13);
+}
+
+// ── Hour type tests ────────────────────────────────────────────────────────
+
+#[test]
+fn hour_from_str_fast_path() {
+  // Test single digit fast paths
+  for i in 0..=9 {
+    let h: Hour = format!("{i}").parse().unwrap();
+    assert_eq!(h.as_u64(), i);
+  }
+  // Test zero-padded fast paths
+  for i in 0..=9 {
+    let h: Hour = format!("0{i}").parse().unwrap();
+    assert_eq!(h.as_u64(), i);
+  }
+}
+
+#[test]
+fn hour_from_str_large() {
+  let h: Hour = "12345".parse().unwrap();
+  assert_eq!(h.as_u64(), 12345);
+}
+
+#[test]
+fn hour_display() {
+  assert_eq!(format!("{}", Hour::with(0)), "00");
+  assert_eq!(format!("{}", Hour::with(5)), "05");
+  assert_eq!(format!("{}", Hour::with(10)), "10");
+  assert_eq!(format!("{}", Hour::with(999)), "999");
+}
+
+// ── Percentage tests ────────────────────────────────────────────────────────
+
+#[test]
+#[cfg(feature = "std")]
+fn percentage_hash_and_ord() {
+  use core::hash::{Hash, Hasher};
+  use std::collections::hash_map::DefaultHasher;
+
+  let a = Percentage::with(50.0);
+  let b = Percentage::with(50.0);
+  let c = Percentage::with(75.0);
+
+  let mut ha = DefaultHasher::new();
+  a.hash(&mut ha);
+  let mut hb = DefaultHasher::new();
+  b.hash(&mut hb);
+  assert_eq!(ha.finish(), hb.finish());
+
+  assert!(a < c);
+  assert_eq!(a.partial_cmp(&b), Some(core::cmp::Ordering::Equal));
+}
+
+// ── Anchor tests ────────────────────────────────────────────────────────────
+
+#[test]
+fn anchor_accessors() {
+  let a = Anchor::new(Percentage::with(10.0), Percentage::with(20.0));
+  assert_eq!(a.x(), Percentage::with(10.0));
+  assert_eq!(a.y(), Percentage::with(20.0));
+}
+
+// ── Region builder tests ────────────────────────────────────────────────────
+
+#[test]
+fn region_with_anchors() {
+  use fasrt::vtt::Region;
+
+  let region = Region::new(RegionId::new("test"))
+    .with_region_anchor(Anchor::new(Percentage::with(10.0), Percentage::with(20.0)))
+    .with_viewport_anchor(Anchor::new(Percentage::with(30.0), Percentage::with(40.0)));
+
+  assert_eq!(region.region_anchor().x(), Percentage::with(10.0));
+  assert_eq!(region.viewport_anchor().x(), Percentage::with(30.0));
+}
+
+// ── Parser edge cases ───────────────────────────────────────────────────────
+
+#[test]
+fn note_at_eof_without_trailing_newline() {
+  let vtt = "WEBVTT\n\nNOTE\nThis is a note";
+  let blocks = collect(vtt).unwrap();
+  assert_eq!(blocks.len(), 1);
+  assert!(matches!(&blocks[0], Block::Note(t) if *t == "This is a note"));
+}
+
+#[test]
+fn style_at_eof_without_trailing_newline() {
+  let vtt = "WEBVTT\n\nSTYLE\n::cue { color: red; }";
+  let blocks = collect(vtt).unwrap();
+  assert_eq!(blocks.len(), 1);
+  assert!(matches!(&blocks[0], Block::Style(t) if t.contains("color: red")));
+}
+
+#[test]
+fn region_at_eof_without_trailing_newline() {
+  let vtt = "WEBVTT\n\nREGION\nid:test\nwidth:50%\nlines:3\nscroll:up";
+  let blocks = collect(vtt).unwrap();
+  assert_eq!(blocks.len(), 1);
+  if let Block::Region(r) = &blocks[0] {
+    assert_eq!(r.id().as_str(), "test");
+    assert_eq!(r.scroll(), Scroll::Up);
+  } else {
+    panic!("expected region block");
+  }
+}
+
+#[test]
+fn cue_settings_line_number() {
+  let vtt = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 line:-1
+Hello
+";
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  let line = settings.line().unwrap();
+  assert!(matches!(line.value(), LineValue::Number(n) if n == -1));
+}
+
+#[test]
+fn cue_settings_line_with_alignment() {
+  let vtt = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 line:50%,center
+Hello
+";
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  let line = settings.line().unwrap();
+  assert_eq!(line.alignment(), Some(LineAlign::Center));
+}
+
+#[test]
+fn cue_settings_position_with_alignment() {
+  let vtt = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 position:50%,line-right
+Hello
+";
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  let pos = settings.position().unwrap();
+  assert_eq!(pos.alignment(), Some(PositionAlign::LineRight));
+}
+
+#[test]
+fn cue_settings_vertical_lr() {
+  let vtt = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 vertical:lr
+Hello
+";
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  assert_eq!(settings.vertical(), Some(Vertical::Lr));
+}
+
+#[test]
+fn cue_settings_align() {
+  let vtt = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 align:end
+Hello
+";
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  assert_eq!(settings.align(), Some(Align::End));
+}
+
+#[test]
+fn cue_settings_size() {
+  let vtt = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 size:80%
+Hello
+";
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  let size = settings.size().unwrap();
+  assert_eq!(size.value(), Percentage::with(80.0));
+}
+
+#[test]
+fn cue_settings_region_id() {
+  let vtt = "\
+WEBVTT
+
+00:01.000 --> 00:04.000 region:nav
+Hello
+";
+  let cues = collect_cues(vtt).unwrap();
+  let settings = cues[0].header_ref().settings().unwrap();
+  assert_eq!(settings.region().unwrap().as_str(), "nav");
 }

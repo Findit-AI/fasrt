@@ -878,3 +878,60 @@ Goodbye world!
     assert_eq!(written, original);
   }
 }
+
+// ── Options default tests ───────────────────────────────────────────────────
+
+#[test]
+fn options_default_is_strict() {
+  let opts = Options::default();
+  let strict = Options::strict();
+  // Default should be strict
+  assert_eq!(format!("{opts:?}"), format!("{strict:?}"));
+}
+
+// ── Error path tests ─────────────────────────────────────────────────────────
+
+#[test]
+fn strict_rejects_orphan_text() {
+  let srt = "random text\n\n1\n00:00:01,000 --> 00:00:02,000\nHello\n";
+  let result = collect(srt);
+  assert!(result.is_err());
+}
+
+#[test]
+fn lossy_ignores_orphan_text() {
+  let srt = "random text\n\n1\n00:00:01,000 --> 00:00:02,000\nHello\n";
+  let entries = collect_lossy(srt).unwrap();
+  assert_eq!(entries.len(), 1);
+}
+
+#[test]
+fn strict_rejects_broken_header() {
+  // Index followed by non-timing line
+  let srt = "1\nnot a timing line\n";
+  let result = collect(srt);
+  assert!(result.is_err());
+}
+
+#[test]
+fn lossy_ignores_broken_header() {
+  let srt = "1\nnot a timing line\n\n2\n00:00:01,000 --> 00:00:02,000\nHello\n";
+  let entries = collect_lossy(srt).unwrap();
+  assert_eq!(entries.len(), 1);
+}
+
+#[test]
+fn lossy_broken_header_blank_line() {
+  // Index followed by blank line in lossy mode
+  let srt = "1\n\n2\n00:00:01,000 --> 00:00:02,000\nHello\n";
+  let entries = collect_lossy(srt).unwrap();
+  assert_eq!(entries.len(), 1);
+}
+
+#[test]
+fn hour_4_digits_rejected() {
+  // SRT only supports 2-3 digit hours
+  let srt = "1\n0000:00:01,000 --> 0000:00:02,000\nHello\n";
+  let result = collect(srt);
+  assert!(result.is_err());
+}
