@@ -153,7 +153,7 @@ pub(crate) fn parse_timestamp_cue(s: &str) -> Result<Timestamp, ParseVttError> {
   // Short form `MM:SS.mmm` = 9 bytes (0 hour digits).
   // Long form `H+:MM:SS.mmm` = 12..=29 bytes (1..=20 hour digits).
   // Reject lengths outside [9, 29] and the gap [10, 11].
-  if len < 9 || len > 29 || (len > 9 && len < 12) {
+  if !(9..=29).contains(&len) || (len > 9 && len < 12) {
     return Err(ParseVttError::InvalidTimestamp(
       TimestampError::InvalidLength,
     ));
