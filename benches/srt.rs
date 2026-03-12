@@ -16,31 +16,35 @@ Goodbye world!
 const MEDIUM_SRT: &str = include_str!("../fixtures/srt/DeathNote_01.eng.srt");
 
 fn load_all_fixtures() -> String {
-  let mut paths: Vec<_> = std::fs::read_dir("fixtures/srt")
-    .unwrap()
-    .filter_map(|entry| {
-      let entry = entry.ok()?;
-      let path = entry.path();
-      if path.extension().is_some_and(|e| e == "srt") {
-        Some(path)
-      } else {
-        None
-      }
-    })
-    .collect();
+  if let Ok(read_dir) = std::fs::read_dir("fixtures/srt") {
+    let mut paths: Vec<_> = read_dir
+      .filter_map(|entry| {
+        let entry = entry.ok()?;
+        let path = entry.path();
+        if path.extension().is_some_and(|e| e == "srt") {
+          Some(path)
+        } else {
+          None
+        }
+      })
+      .collect();
 
-  paths.sort();
+    paths.sort();
 
-  let mut buf = String::new();
-  for path in paths {
-    if let Ok(content) = std::fs::read_to_string(path) {
-      if !buf.is_empty() {
-        buf.push_str("\n\n");
+    let mut buf = String::new();
+    for path in paths {
+      if let Ok(content) = std::fs::read_to_string(path) {
+        if !buf.is_empty() {
+          buf.push_str("\n\n");
+        }
+        buf.push_str(&content);
       }
-      buf.push_str(&content);
     }
+    buf
+  } else {
+    // Fallback: use a small embedded sample when fixtures are unavailable.
+    SMALL_SRT.to_string()
   }
-  buf
 }
 
 fn bench_srt_parse(c: &mut Criterion) {
