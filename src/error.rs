@@ -51,7 +51,7 @@ pub enum ParseSecondError {
 pub enum ParseHourError {
   /// The hour component is not zero-padded to 2 digits (SRT),
   /// or contains non-digit characters (VTT).
-  #[error("hour component is not zero-padded to 2 digits")]
+  #[error("hour component is not zero-padded to 2 digits or contains invalid characters")]
   #[unwrap(ignore)]
   #[try_unwrap(ignore)]
   NotPadded,
